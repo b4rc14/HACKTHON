@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import AudienceView from './AudienceView.jsx';
 import { GENRES, getControlDef } from '../game/storyData.js';
+import { getStagePerformance } from '../game/stageChoreography.js';
 
 const LIGHT_COLORS = {
   warm: '#ffc46b',
@@ -394,10 +395,58 @@ export default function StageView({
   const selectedSound = getControlDef('sound', selections?.sound);
   const showCurtainsClosed = phase === 'briefing' || phase === 'crisis';
   const timerPercent = timerMax ? Math.max(0, Math.min(100, (timer / timerMax) * 100)) : 0;
+  const performance = getStagePerformance({
+    phase,
+    incident,
+    genre,
+    result,
+    lastReaction,
+    crisis,
+  });
+  const [performanceBeat, setPerformanceBeat] = useState('idle');
+  const sceneRef = useRef(null);
   const shake =
     lastReaction?.type === 'tomatoes' ||
     lastReaction?.type === 'protest' ||
     (incident?.id === 'explosion' && phase === 'resolution');
+
+  useEffect(() => {
+    if (phase === 'resolution') {
+      setPerformanceBeat('impact');
+      const reactionTimer = window.setTimeout(() => setPerformanceBeat('react'), 460);
+      const settleTimer = window.setTimeout(() => setPerformanceBeat('settle'), 1900);
+      return () => {
+        window.clearTimeout(reactionTimer);
+        window.clearTimeout(settleTimer);
+      };
+    }
+    if (phase === 'incident') {
+      setPerformanceBeat('live');
+      return undefined;
+    }
+    if (phase === 'crisis') {
+      setPerformanceBeat('tense');
+      return undefined;
+    }
+    setPerformanceBeat('idle');
+    return undefined;
+  }, [phase, result?.comboSignature, lastReaction?.id, incident?.id]);
+
+  const handleParallax = (event) => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    const rect = scene.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    const y = ((event.clientY - rect.top) / rect.height) * 2 - 1;
+    scene.style.setProperty('--parallax-x', x.toFixed(3));
+    scene.style.setProperty('--parallax-y', y.toFixed(3));
+  };
+
+  const resetParallax = () => {
+    if (!sceneRef.current) return;
+    sceneRef.current.style.setProperty('--parallax-x', '0');
+    sceneRef.current.style.setProperty('--parallax-y', '0');
+  };
 
   return (
     <section
@@ -405,6 +454,8 @@ export default function StageView({
         'stage-shell',
         `stage-shell--${genre}`,
         `stage-shell--${phase}`,
+        `performance--${performanceBeat}`,
+        `camera--${performance.camera}`,
         blackout ? 'is-blackout' : '',
         brokenLight ? 'has-broken-light' : '',
         sparks ? 'has-cable-sparks' : '',
@@ -426,7 +477,12 @@ export default function StageView({
         </span>
       </div>
 
-      <div className="stage-scene">
+      <div
+        className="stage-scene"
+        ref={sceneRef}
+        onPointerMove={handleParallax}
+        onPointerLeave={resetParallax}
+      >
         <SetPiece genre={genre} />
 
         <div className="stage-depth" aria-hidden="true" />
@@ -482,6 +538,36 @@ export default function StageView({
           ))}
         </div>
 
+        {performance.fx.includes('portal') ? (
+          <div className="story-fx story-fx--portal" aria-hidden="true">
+            <span /><span /><span />
+          </div>
+        ) : null}
+        {performance.fx.includes('petals') ? (
+          <div className="story-fx story-fx--petals" aria-hidden="true">
+            {Array.from({ length: 10 }, (_, index) => (
+              <span key={index} style={{ '--i': index }}>♥</span>
+            ))}
+          </div>
+        ) : null}
+        {performance.fx.includes('confetti') ? (
+          <div className="story-fx story-fx--confetti" aria-hidden="true">
+            {Array.from({ length: 14 }, (_, index) => (
+              <span key={index} style={{ '--i': index }}>✦</span>
+            ))}
+          </div>
+        ) : null}
+        {performance.fx.includes('dinosaur-shadow') ? (
+          <div className="story-fx story-fx--dino-shadow" aria-hidden="true" />
+        ) : null}
+        {performance.fx.includes('phone-lights') ? (
+          <div className="story-fx story-fx--phones" aria-hidden="true">
+            {Array.from({ length: 7 }, (_, index) => (
+              <span key={index} style={{ '--i': index }} />
+            ))}
+          </div>
+        ) : null}
+
         {dinosaurVisible ? <DinosaurProp faded={incidentIndex === 2} /> : null}
         {selectedObject ? <PropArt type={selectedObject} /> : null}
         {selectedSound ? (
@@ -492,7 +578,7 @@ export default function StageView({
           </div>
         ) : null}
 
-        <div className={`actors ${showCurtainsClosed ? 'actors--peek' : ''}`}>
+        <div className={`actors actors--${performance.action} ${showCurtainsClosed ? 'actors--peek' : ''}`}>
           <ActorFigure who="lia" mood={actorMood} speaking={activeSpeaker === 'LÍA'} />
           <ActorFigure who="bruno" mood={actorMood} speaking={activeSpeaker === 'BRUNO'} />
         </div>

@@ -87,7 +87,10 @@ function Spectator({ group, index, reaction, row }) {
       <span className="spectator__body">
         <i className="spectator__prop" />
       </span>
-      <span className="spectator__arms" />
+      <span className="spectator__arms">
+        <i className="spectator__arm spectator__arm--left" />
+        <i className="spectator__arm spectator__arm--right" />
+      </span>
     </span>
   );
 }
@@ -178,7 +181,10 @@ export default function AudienceView({ audience, stats, reaction, phase, interac
               <span key={index} className={`spectator spectator--${lowest.id} is-walking`} style={{ '--person': index }}>
                 <span className="spectator__head"><i className="spectator__hair" /></span>
                 <span className="spectator__body" />
-                <span className="spectator__arms" />
+                <span className="spectator__arms">
+                  <i className="spectator__arm spectator__arm--left" />
+                  <i className="spectator__arm spectator__arm--right" />
+                </span>
               </span>
             ))}
             <span className="walkout-label">SE VAN</span>

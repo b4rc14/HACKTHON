@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useReducer } from 'react';
+import React, { useEffect, useMemo, useReducer, useState } from 'react';
 import TitleScreen from './components/TitleScreen.jsx';
 import StageView from './components/StageView.jsx';
 import ControlPanel from './components/ControlPanel.jsx';
@@ -9,13 +9,14 @@ import EndingScreen from './components/EndingScreen.jsx';
 import DemoPanel from './components/DemoPanel.jsx';
 import HistoryPanel from './components/HistoryPanel.jsx';
 import StageEventOverlay from './components/StageEventOverlay.jsx';
+import SceneInterlude from './components/SceneInterlude.jsx';
 import { createInitialState } from './game/initialState.js';
 import { gameReducer } from './game/gameReducer.js';
 import { INCIDENTS, GENRES, CONTROLS } from './game/storyData.js';
 import { getAudienceStats } from './game/audienceEngine.js';
 import { getTimerPercent } from './game/gameEngine.js';
 import { selectionIsComplete } from './game/narrativeEngine.js';
-import { playCue, previewControl, setMuted } from './game/audio.js';
+import { playCue, previewControl, setMuted, startCrowdAmbience, stopCrowdAmbience, setCrowdLevel } from './game/audio.js';
 
 const PHASE_LABEL = {
   title: 'CARTEL',
@@ -104,8 +105,19 @@ function TopBar({ state, incident, onToggleSound, onToggleDemo, onRestart }) {
 
 export default function App() {
   const [state, dispatch] = useReducer(gameReducer, undefined, createInitialState);
+  const [showResult, setShowResult] = useState(true);
   const incident = INCIDENTS[state.incidentIndex] || INCIDENTS[0];
   const stats = useMemo(() => getAudienceStats(state.audience), [state.audience]);
+
+  useEffect(() => {
+    if (state.phase !== 'resolution' || !state.result || state.result.crisisResolved) {
+      setShowResult(true);
+      return undefined;
+    }
+    setShowResult(false);
+    const timer = window.setTimeout(() => setShowResult(true), 2800);
+    return () => window.clearTimeout(timer);
+  }, [state.phase, state.narrative.sceneCount, state.result?.crisisResolved]);
 
   useEffect(() => {
     setMuted(!state.soundEnabled);
@@ -134,6 +146,30 @@ export default function App() {
     const interval = window.setInterval(() => dispatch({ type: 'STAGE_EVENT_TICK' }), 1000);
     return () => window.clearInterval(interval);
   }, [state.stage?.activeEvent?.id, state.stage?.activeEvent?.phase, state.demo.paused]);
+
+  useEffect(() => {
+    if (state.soundEnabled && !['title', 'ending'].includes(state.phase)) {
+      startCrowdAmbience();
+    } else {
+      stopCrowdAmbience();
+    }
+  }, [state.soundEnabled, state.phase]);
+
+  useEffect(() => {
+    if (!state.soundEnabled || ['title', 'ending'].includes(state.phase)) return;
+    const phaseIntensity = state.phase === 'briefing' ? 0.35 : state.phase === 'crisis' ? 1 : 0.8;
+    setCrowdLevel({
+      intensity: phaseIntensity + (100 - stats.averageSatisfaction) / 260,
+      brightness: 0.35 + stats.averageSatisfaction / 160,
+    });
+  }, [state.soundEnabled, state.phase, stats.averageSatisfaction, state.audience.discontent]);
+
+  useEffect(
+    () => () => {
+      stopCrowdAmbience();
+    },
+    [],
+  );
 
   useEffect(() => {
     const keyMap = {
@@ -347,15 +383,26 @@ export default function App() {
         />
       ) : null}
 
-      <IncidentOverlay
-        state={state}
-        incident={incident}
-        onBegin={() => dispatch({ type: 'BEGIN_INCIDENT' })}
-        onContinue={() => dispatch({ type: 'CONTINUE' })}
-      />
+      {state.phase === 'resolution' && state.result && !showResult ? (
+        <SceneInterlude
+          incident={incident}
+          result={state.result}
+          onSkip={() => setShowResult(true)}
+        />
+      ) : null}
+
+      {!(state.phase === 'resolution' && !showResult) ? (
+        <IncidentOverlay
+          state={state}
+          incident={incident}
+          onBegin={() => dispatch({ type: 'BEGIN_INCIDENT' })}
+          onContinue={() => dispatch({ type: 'CONTINUE' })}
+        />
+      ) : null}
 
       {state.stage?.activeEvent ? (
         <StageEventOverlay
+          key={state.stage.activeEvent.id}
           state={state}
           event={state.stage.activeEvent}
           onCollect={(targetId) => dispatch({ type: 'STAGE_EVENT_COLLECT', targetId })}

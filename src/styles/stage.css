@@ -1334,6 +1334,221 @@
   50% { transform: translateY(-3px) rotate(4deg); }
 }
 
+/* ==========================================================================
+   2.5D, COREOGRAFÍA Y ACCIONES DE LOS ACTORES
+   ========================================================================== */
+
+.stage-scene {
+  --parallax-x: 0;
+  --parallax-y: 0;
+  perspective: 900px;
+}
+.set-piece {
+  transform: translate3d(calc(var(--parallax-x) * 9px), calc(var(--parallax-y) * 6px), 0) scale(1.025);
+  transition: transform 180ms ease-out;
+}
+.genre-decor {
+  transform: translate3d(calc(var(--parallax-x) * -16px), calc(var(--parallax-y) * -7px), 0);
+  transition: transform 160ms ease-out;
+}
+.prop--dinosaur {
+  margin-left: calc(var(--parallax-x) * -4px);
+}
+.dust-field {
+  transform: translate3d(calc(var(--parallax-x) * 20px), calc(var(--parallax-y) * 10px), 0);
+  transition: transform 90ms linear;
+}
+.actors {
+  transition: transform 500ms ease;
+}
+.camera--intimate .actors { transform: scale(1.07); }
+.camera--close .actors { transform: scale(1.04); }
+
+.performance--impact .stage-scene {
+  animation: stageImpactFlash 520ms ease-out both;
+}
+@keyframes stageImpactFlash {
+  0% { filter: brightness(1.65) saturate(1.4); }
+  38% { filter: brightness(1.12) saturate(1.15); }
+  100% { filter: brightness(1) saturate(1); }
+}
+
+/* Acciones de pareja */
+.actors--embrace .actor--lia {
+  transform: translateX(24%) rotate(5deg);
+}
+.actors--embrace .actor--bruno {
+  transform: translateX(-24%) rotate(-5deg);
+}
+.actors--embrace .actor__arm--front {
+  animation: embraceArm 2.4s ease-in-out infinite alternate;
+}
+.actors--levitate .actor {
+  animation: actorLevitate 3.2s ease-in-out infinite;
+}
+.actors--levitate .actor--bruno {
+  animation-delay: -1.4s;
+}
+.actors--slapstick .actor--lia {
+  animation: actorLaugh 1.1s ease-in-out infinite;
+}
+.actors--slapstick .actor--bruno {
+  animation: actorSlip 2.2s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+.actors--hide .actor {
+  transform: translateY(18px) scale(0.9);
+  filter: brightness(0.8);
+}
+.actors--huddle .actor--lia {
+  transform: translateX(18%) translateY(8px) scale(0.95);
+}
+.actors--huddle .actor--bruno {
+  transform: translateX(-18%) translateY(8px) scale(0.95);
+}
+.actors--shock .actor--lia,
+.actors--shock .actor--bruno {
+  animation: actorShock 1.2s ease-in-out infinite;
+}
+.actors--celebrate .actor--lia,
+.actors--celebrate .actor--bruno {
+  animation: actorCelebrate 1.6s ease-in-out infinite;
+}
+.actors--celebrate .actor--bruno { animation-delay: -0.8s; }
+.actors--shock .actor__face { filter: saturate(0.7); }
+.actors--hide .actor__face { transform: translateY(5px); }
+
+@keyframes embraceArm {
+  from { transform: rotate(-15deg); }
+  to { transform: rotate(48deg); }
+}
+@keyframes actorLevitate {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-18px) rotate(1.5deg); }
+}
+@keyframes actorLaugh {
+  0%, 100% { transform: rotate(-2deg) translateY(0); }
+  50% { transform: rotate(4deg) translateY(-2px); }
+}
+@keyframes actorSlip {
+  0%, 100% { transform: rotate(0) translate(0, 0); }
+  24% { transform: rotate(10deg) translate(8px, 1px); }
+  38% { transform: rotate(18deg) translate(14px, 10px); }
+  54% { transform: rotate(-4deg) translate(3px, 0); }
+}
+@keyframes actorShock {
+  0%, 100% { transform: translateX(0) rotate(-1deg); }
+  20% { transform: translateX(-4px) rotate(-2deg); }
+  40% { transform: translateX(4px) rotate(1deg); }
+  60% { transform: translateX(-2px) rotate(-1deg); }
+}
+@keyframes actorCelebrate {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  35% { transform: translateY(-9px) rotate(2deg); }
+  65% { transform: translateY(-3px) rotate(-1deg); }
+}
+
+/* Efectos narrativos sobre el escenario */
+.story-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 13;
+  pointer-events: none;
+  overflow: hidden;
+}
+.story-fx--portal {
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  inset: 9% 30% 18%;
+}
+.story-fx--portal span {
+  position: absolute;
+  width: 56%;
+  aspect-ratio: 1;
+  border: 2px solid rgba(105, 240, 189, 0.65);
+  border-radius: 50%;
+  box-shadow:
+    0 0 18px rgba(105, 240, 189, 0.4),
+    inset 0 0 18px rgba(105, 240, 189, 0.18);
+  animation: portalRing 3.2s ease-in-out infinite;
+}
+.story-fx--portal span:nth-child(2) { width: 78%; opacity: 0.55; animation-delay: -0.9s; }
+.story-fx--portal span:nth-child(3) { width: 38%; opacity: 0.8; animation-delay: -1.6s; }
+@keyframes portalRing {
+  0% { transform: rotate(0deg) scale(0.9); opacity: 0.25; }
+  50% { transform: rotate(160deg) scale(1.06); opacity: 0.8; }
+  100% { transform: rotate(360deg) scale(0.9); opacity: 0.25; }
+}
+.story-fx--petals span {
+  position: absolute;
+  top: -8%;
+  left: calc(12% + (var(--i) * 8%));
+  color: #ff91a8;
+  font-size: calc(0.6rem + (var(--i) % 3) * 0.2rem);
+  opacity: 0.8;
+  filter: drop-shadow(0 0 5px rgba(255, 111, 145, 0.4));
+  animation: storyPetal calc(4s + (var(--i) * 0.35s)) linear infinite;
+  animation-delay: calc(var(--i) * -0.6s);
+}
+@keyframes storyPetal {
+  0% { transform: translateY(-30px) rotate(0deg); opacity: 0; }
+  12% { opacity: 0.8; }
+  100% { transform: translateY(390px) translateX(30px) rotate(320deg); opacity: 0; }
+}
+.story-fx--confetti span {
+  position: absolute;
+  top: -6%;
+  left: calc(8% + (var(--i) * 6.3%));
+  color: var(--comedy);
+  font-size: 0.6rem;
+  animation: storyConfetti calc(3.7s + (var(--i) * 0.21s)) linear infinite;
+  animation-delay: calc(var(--i) * -0.4s);
+}
+@keyframes storyConfetti {
+  0% { transform: translateY(-20px) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.9; }
+  100% { transform: translateY(380px) rotate(420deg); opacity: 0; }
+}
+.story-fx--dino-shadow {
+  z-index: 2;
+  inset: 18% 5% 24% 40%;
+  background: radial-gradient(ellipse at 55% 48%, rgba(15, 7, 8, 0.42), transparent 65%);
+  filter: blur(4px);
+  animation: dinoShadow 5s ease-in-out infinite;
+}
+@keyframes dinoShadow {
+  0%, 100% { opacity: 0.35; transform: scaleX(0.94); }
+  50% { opacity: 0.6; transform: scaleX(1.03); }
+}
+.story-fx--phones span {
+  position: absolute;
+  left: calc(14% + var(--i) * 10%);
+  bottom: calc(12% + (var(--i) % 3) * 7%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #d8e6ff;
+  box-shadow: 0 0 11px #d8e6ff;
+  animation: phoneLight 2.8s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.4s);
+}
+@keyframes phoneLight {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.9; }
+}
+
+.stage-shell.camera--shake .stage-scene {
+  animation: cameraShake 520ms ease-in-out 1;
+}
+@keyframes cameraShake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-3px, 1px); }
+  40% { transform: translate(3px, -2px); }
+  60% { transform: translate(-2px, 1px); }
+  80% { transform: translate(1px, -1px); }
+}
+
 .stage-shell.is-shaking .stage-scene {
   animation: stageShake 420ms ease-in-out 1;
 }
@@ -1431,6 +1646,29 @@
   border: 1px solid rgba(31, 16, 20, 0.35);
   z-index: 2;
 }
+.spectator__head::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 2px;
+  width: 1.5px;
+  height: 1.5px;
+  border-radius: 50%;
+  background: #3b2524;
+  box-shadow: 4px 0 #3b2524;
+  opacity: 0.72;
+}
+.spectator__head::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 3px;
+  height: 1px;
+  transform: translateX(-50%);
+  border-radius: 99px;
+  background: rgba(91, 34, 41, 0.48);
+}
 .spectator__hair {
   position: absolute;
   top: -1px;
@@ -1457,15 +1695,25 @@
 .spectator__arms {
   position: absolute;
   left: 50%;
-  bottom: 5px;
+  bottom: 4px;
   width: 17px;
-  height: 5px;
+  height: 9px;
   transform: translateX(-50%);
-  border-radius: 99px;
-  background: var(--spectator-color);
-  opacity: 0.55;
-  transition: transform 220ms ease;
+  transform-origin: 50% 100%;
+  z-index: 3;
 }
+.spectator__arm {
+  position: absolute;
+  bottom: 0;
+  width: 2px;
+  height: 7px;
+  border-radius: 99px;
+  background: #cf9477;
+  transform-origin: 50% 100%;
+  transition: transform 180ms ease;
+}
+.spectator__arm--left { left: 3px; transform: rotate(18deg); }
+.spectator__arm--right { right: 3px; transform: rotate(-18deg); }
 .spectator__prop {
   position: absolute;
   right: -2px;
@@ -1519,19 +1767,23 @@
 .spectator.is-cheering {
   animation: personCheer 520ms ease-in-out infinite alternate;
 }
-.spectator.is-cheering .spectator__arms {
-  transform: translateX(-50%) translateY(-6px) rotate(-18deg);
-  opacity: 0.9;
+.spectator.is-cheering .spectator__arm {
   background: #e9c58f;
-  height: 3px;
-  width: 19px;
+  animation: spectatorClap 360ms ease-in-out infinite alternate;
 }
+.spectator.is-cheering .spectator__arm--left { transform: rotate(112deg); animation-delay: -0.08s; }
+.spectator.is-cheering .spectator__arm--right { transform: rotate(-112deg); }
 .spectator.is-heckling {
   animation: personHeckle 1s ease-in-out infinite;
 }
-.spectator.is-heckling .spectator__arms {
-  transform: translateX(-50%) rotate(24deg);
-  opacity: 0.9;
+.spectator.is-heckling .spectator__arm--left {
+  background: #ddab8b;
+  transform: rotate(142deg);
+  animation: heckleArm 620ms ease-in-out infinite alternate;
+}
+.spectator.is-heckling .spectator__arm--right {
+  background: #ddab8b;
+  transform: rotate(52deg);
 }
 .spectator.is-standing {
   transform: translateY(-10px);
@@ -1702,6 +1954,14 @@
 @keyframes personCheer {
   from { transform: translateY(0) rotate(-2deg); }
   to { transform: translateY(-5px) rotate(2deg); }
+}
+@keyframes spectatorClap {
+  from { margin-left: -2px; }
+  to { margin-left: 2px; }
+}
+@keyframes heckleArm {
+  from { transform: rotate(128deg); }
+  to { transform: rotate(152deg); }
 }
 @keyframes personHeckle {
   0%, 100% { transform: translateX(0) rotate(0); }

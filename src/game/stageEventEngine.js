@@ -185,7 +185,7 @@ export const collectStageTarget = (state, targetId) => {
         lastFeedback: updated.feedback,
       },
     };
-    next = withCue(next, 'tomato');
+    next = withCue(next, 'shock');
     if (timer <= 0) return finishStageEvent(next, false);
     return next;
   }
@@ -208,7 +208,9 @@ export const collectStageTarget = (state, targetId) => {
       lastFeedback: updated.feedback,
     },
   };
-  next = withCue(next, isComplete ? 'applause-soft' : 'click');
+  const collectCue =
+    event.id === 'spotlight' ? 'glass' : event.id === 'cable' ? 'spark' : 'cluck';
+  next = withCue(next, isComplete ? 'applause-soft' : collectCue);
   return isComplete ? finishStageEvent(next, true) : next;
 };
 

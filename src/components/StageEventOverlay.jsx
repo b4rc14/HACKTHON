@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { STAGE_EVENTS, getEventProgress } from '../game/stageEvents.js';
 
 const EFFECT_LABEL = {
@@ -41,6 +41,102 @@ export default function StageEventOverlay({ event, onCollect, onClose }) {
   const effects = isResult
     ? effectChips(event.effects || (event.success ? def.successEffects : def.failEffects))
     : [];
+  const [dragging, setDragging] = useState(null);
+  const [trayHot, setTrayHot] = useState(false);
+  const [dragNote, setDragNote] = useState('');
+  const fieldRef = useRef(null);
+  const trayRef = useRef(null);
+  const suppressClickRef = useRef(false);
+
+  const pointInTray = (clientX, clientY) => {
+    const tray = trayRef.current;
+    if (!tray) return false;
+    const rect = tray.getBoundingClientRect();
+    return (
+      clientX >= rect.left - 10 &&
+      clientX <= rect.right + 10 &&
+      clientY >= rect.top - 10 &&
+      clientY <= rect.bottom + 10
+    );
+  };
+
+  const handleFieldMove = (event2) => {
+    const field = fieldRef.current;
+    if (!field) return;
+    const rect = field.getBoundingClientRect();
+    field.style.setProperty('--torch-x', `${((event2.clientX - rect.left) / rect.width) * 100}%`);
+    field.style.setProperty('--torch-y', `${((event2.clientY - rect.top) / rect.height) * 100}%`);
+  };
+
+  const handlePointerDown = (pointerEvent2, target) => {
+    if (isResult || event.collected.includes(target.id)) return;
+    suppressClickRef.current = false;
+    try {
+      pointerEvent2.currentTarget.setPointerCapture?.(pointerEvent2.pointerId);
+    } catch {
+      // Algunos navegadores no permiten capturar punteros sintéticos.
+    }
+    setDragNote('');
+    setDragging({
+      id: target.id,
+      target,
+      x: pointerEvent2.clientX,
+      y: pointerEvent2.clientY,
+      startX: pointerEvent2.clientX,
+      startY: pointerEvent2.clientY,
+      moved: false,
+    });
+  };
+
+  const handlePointerMove = (pointerEvent2) => {
+    if (!dragging) return;
+    const moved =
+      Math.abs(pointerEvent2.clientX - dragging.startX) > 7 ||
+      Math.abs(pointerEvent2.clientY - dragging.startY) > 7;
+    setTrayHot(pointInTray(pointerEvent2.clientX, pointerEvent2.clientY));
+    setDragging((current) =>
+      current
+        ? {
+            ...current,
+            x: pointerEvent2.clientX,
+            y: pointerEvent2.clientY,
+            moved: current.moved || moved,
+          }
+        : current,
+    );
+  };
+
+  const handlePointerUp = (pointerEvent2) => {
+    if (!dragging) return;
+    try {
+      pointerEvent2.currentTarget.releasePointerCapture?.(pointerEvent2.pointerId);
+    } catch {
+      // La captura pudo perderse al desmontar el objetivo.
+    }
+    if (dragging.moved) {
+      suppressClickRef.current = true;
+      const overTray = pointInTray(pointerEvent2.clientX, pointerEvent2.clientY);
+      if (overTray) {
+        setDragNote('');
+        onCollect(dragging.id);
+      } else {
+        setDragNote(`Arrastra ${def.targetLabel.toLowerCase()} a la bandeja para guardarlo.`);
+      }
+      window.setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 0);
+    }
+    setDragging(null);
+    setTrayHot(false);
+  };
+
+  const handleTargetClick = (target) => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
+    }
+    onCollect(target.id);
+  };
 
   return (
     <div className="modal-scrim modal-scrim--event" role="presentation">
@@ -89,13 +185,19 @@ export default function StageEventOverlay({ event, onCollect, onClose }) {
               </span>
             </div>
 
-            <div className={`event-field event-field--${def.id}`}>
+            <div
+              className={`event-field event-field--${def.id}`}
+              ref={fieldRef}
+              onPointerMove={handleFieldMove}
+            >
               <div className="event-field__glow" aria-hidden="true" />
               <div className="event-field__grid" aria-hidden="true" />
               <div className="event-field__floor" aria-hidden="true" />
-              <span className="event-field__label">ZONA DE REPARACIÓN · HAZ CLIC EN LOS {def.targetPlural}</span>
+              {def.id === 'spotlight' ? <div className="event-field__torch" aria-hidden="true" /> : null}
+              <span className="event-field__label">ZONA DE REPARACIÓN · HAZ CLIC O ARRASTRA LOS {def.targetPlural}</span>
               {event.targets.map((target) => {
                 const collected = event.collected.includes(target.id);
+                const isDragging = dragging?.id === target.id;
                 return (
                   <button
                     key={target.id}
@@ -105,6 +207,7 @@ export default function StageEventOverlay({ event, onCollect, onClose }) {
                       `event-target--${target.type}`,
                       `event-target--${target.size || 'md'}`,
                       collected ? 'is-collected' : '',
+                      isDragging ? 'is-dragging' : '',
                     ]
                       .filter(Boolean)
                       .join(' ')}
@@ -113,7 +216,14 @@ export default function StageEventOverlay({ event, onCollect, onClose }) {
                       top: `${target.y}%`,
                       '--rotate': `${target.rotate || 0}deg`,
                     }}
-                    onClick={() => onCollect(target.id)}
+                    onPointerDown={(pointerEvent2) => handlePointerDown(pointerEvent2, target)}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={() => {
+                      setDragging(null);
+                      setTrayHot(false);
+                    }}
+                    onClick={() => handleTargetClick(target)}
                     disabled={collected}
                     aria-label={`${target.label}${collected ? ', ya recogido' : ''}`}
                   >
@@ -122,9 +232,39 @@ export default function StageEventOverlay({ event, onCollect, onClose }) {
                   </button>
                 );
               })}
+
+              {dragging ? (
+                <span
+                  className="event-drag-ghost"
+                  style={{ left: `${dragging.x}px`, top: `${dragging.y}px` }}
+                  aria-hidden="true"
+                >
+                  {dragging.target.type === 'decoy' ? dragging.target.icon : def.targetIcon}
+                </span>
+              ) : null}
+
               <div className="event-field__feedback" aria-live="polite">
-                {event.feedback}
+                {dragNote || event.feedback}
               </div>
+            </div>
+
+            <div
+              ref={trayRef}
+              className={`event-tray ${dragging ? 'is-dragging' : ''} ${trayHot ? 'is-hot' : ''}`}
+              role="region"
+              aria-label={def.dropLabel || 'Bandeja de reparación'}
+            >
+              <span className="event-tray__icon" aria-hidden="true">⌑</span>
+              <span>
+                <b>{def.dropLabel || 'BANDEJA DE REPARACIÓN'}</b>
+                <small>{progress.collected}/{progress.total} asegurados</small>
+              </span>
+              <span className="event-tray__hint">SUELTA AQUÍ</span>
+            </div>
+
+            <div className="event-drag-help">
+              <span>{def.id === 'spotlight' ? 'Arrastra cada cristal hasta la bandeja.' : 'Arrastra cada objetivo a la zona de recogida.'}</span>
+              <span>Los señuelos restan 2 segundos.</span>
             </div>
 
             <footer className="event-modal__footer">

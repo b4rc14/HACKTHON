@@ -15,8 +15,9 @@ Guía para trabajar en paralelo después del MVP. La regla principal:
 | Motor narrativo | `src/game/narrativeEngine.js`, `initialState.js` | Diseño de mecánicas | Puntuación de género, coherencia, títulos |
 | Público y crisis | `src/game/audienceEngine.js`, tests de motor | Sistemas / balance | Deltas, umbrales, reacciones, protocolos |
 | Orquestación | `src/game/gameEngine.js`, `gameReducer.js` | Arquitectura / QA | Flujo de actos, finales, demo |
-| Escenario y arte | `StageView.jsx`, `AudienceView.jsx`, `CabinMonitor.jsx`, `StageEventOverlay.jsx`, `stage.css`, `stage-events.css` | Arte / frontend | SVG, animaciones, eventos técnicos, público |
+| Escenario y arte | `StageView.jsx`, `AudienceView.jsx`, `CabinMonitor.jsx`, `StageEventOverlay.jsx`, `SceneInterlude.jsx`, `stageChoreography.js`, `stage.css`, `stage-events.css` | Arte / frontend | SVG, animaciones, eventos técnicos, público |
 | Cabina y UI | `ControlPanel.jsx`, `StatusPanel.jsx`, `CrisisPanel.jsx`, `HistoryPanel.jsx`, `controls.css` | UI / frontend | Layout, monitores, estilos, accesibilidad |
+| Audio | `src/game/audio.js` | Audio / frontend | Ambiente de sala, cues, espacialización |
 | Pantallas | `TitleScreen.jsx`, `EndingScreen.jsx`, `global.css` | UI / presentación | Portada, cartel, export SVG |
 | Demo/QA | `DemoPanel.jsx`, `scripts/simulate.mjs`, tests | QA | Herramientas de prueba |
 | Documentación | `README.md`, `TEAM_GUIDE.md` | Cualquiera | Mantener contratos al día |
@@ -317,6 +318,9 @@ spotlight: {
 - Dificultad: número de objetivos, señuelos y penalización de señuelo (`-2 s` en `collectStageTarget`).
 - Recompensa/castigo: `successEffects` y `failEffects`.
 - El reloj narrativo principal se pausa mientras `state.stage.activeEvent` exista. No lo reactives desde otro componente.
+- `StageEventOverlay` soporta arrastre a la bandeja (`dropLabel` en la definición) y clic como alternativa accesible. La linterna solo se pinta en el foco roto.
+- Los sonidos de recogida se envían desde `stageEventEngine` mediante `soundCue` (`glass`, `spark`, `cluck`, `shock`). Si añadís un tipo nuevo, añadid la rama en `audio.js`.
+- La puesta en escena se decide en `stageChoreography.js` (`action`, `fx`, `camera`). `StageView` la ejecuta con clases CSS; no metas animación en el motor de reglas.
 
 ---
 
@@ -374,7 +378,7 @@ Sugerencia para 5 personas:
 
 1. **Narrativa** trabaja en `storyData.js` y textos de `narrativeEngine` (sin tocar el resto del motor).
 2. **Balance** trabaja en `audienceEngine.js` + tests + `scripts/simulate.mjs`.
-3. **Arte/escenario** trabaja en `StageView.jsx`, `AudienceView.jsx`, `CabinMonitor.jsx`, `StageEventOverlay.jsx`, `stage.css`, `stage-events.css`.
+3. **Arte/escenario** trabaja en `StageView.jsx`, `AudienceView.jsx`, `CabinMonitor.jsx`, `StageEventOverlay.jsx`, `SceneInterlude.jsx`, `stageChoreography.js`, `stage.css`, `stage-events.css`, `audio.js`.
 4. **UI/cabina** trabaja en `ControlPanel.jsx`, `StatusPanel.jsx`, `CrisisPanel.jsx`, `HistoryPanel.jsx`, `controls.css`.
 5. **QA/orquestación** toca `gameEngine.js`, `gameReducer.js`, `stageEventEngine.js`, `stageEvents.js`, `DemoPanel.jsx`, `README`/`TEAM_GUIDE`.
 
@@ -393,7 +397,7 @@ Todas parten del mismo commit de `main`:
 |---|---|---|
 | `feature/narrativa-contenido` | Nuevos actos, objetos, diálogos, títulos y callbacks | `storyData.js`, textos de `narrativeEngine.js`, `IncidentOverlay.jsx`, `EndingScreen.jsx` |
 | `feature/publico-balance` | Satisfacción, reacciones, crisis, dificultad y finales | `audienceEngine.js`, `gameEngine.js`, `scripts/simulate.mjs`, tests |
-| `feature/escenario-animacion` | SVGs, personajes, props, luces, público, eventos técnicos y animaciones | `StageView.jsx`, `AudienceView.jsx`, `CabinMonitor.jsx`, `StageEventOverlay.jsx`, `stage.css`, `stage-events.css` |
+| `feature/escenario-animacion` | SVGs, actores, público, puesta en escena, audio, eventos y animaciones | `StageView.jsx`, `AudienceView.jsx`, `CabinMonitor.jsx`, `StageEventOverlay.jsx`, `SceneInterlude.jsx`, `stageChoreography.js`, `stage.css`, `stage-events.css`, `audio.js` |
 | `feature/ui-cabina` | Cabina, paneles, historial, accesibilidad y estilos | `ControlPanel.jsx`, `CrisisPanel.jsx`, `StatusPanel.jsx`, `HistoryPanel.jsx`, `controls.css` |
 
 Crear una rama nueva a partir de `main`:

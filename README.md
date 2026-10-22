@@ -23,7 +23,9 @@ El juego **se puede jugar completo**:
 - Modo demo para hackathon con reinicio, salto de acto, pausa, simulación de reacciones y snapshot JSON.
 - Escenario enriquecido con proscenio, tramoya, lámparas, polvo, luces volumétricas y efectos de desastre.
 - Público formado por personitas individuales que aplauden, abuchean, insultan, lanzan cosas y abandonan la sala.
-- Eventos técnicos aleatorios con minijuegos: foco roto con cristales, chispas en el cable y gallina fugitiva.
+- Puesta en escena coreografiada: los actores se abrazan, levitan, se esconden, tropiezan y reaccionan a cada género.
+- Sonido de sala continuo con murmullo, gritos, abucheos, pasos y puertas, además de los efectos de escena.
+- Eventos técnicos aleatorios con minijuegos: foco roto, chispas en el cable y gallina fugitiva.
 - Mesa de operador con monitores CRT en vivo de escenario y platea, mandos y botones de control.
 - 16 pruebas automatizadas del motor.
 
@@ -197,8 +199,8 @@ Además, **Dejar pasar la crisis** siempre está disponible para evitar cualquie
 
 El escenario también se rompe por su cuenta:
 
-- **Acto II — Foco roto (garantizado):** el foco estalla y hay que recoger 6 cristales antes de 10 s. Los tornillos son señuelos: pulsarlos resta 2 s. El reloj narrativo de 20 s queda pausado durante la reparación.
-- **Acto III — Cable / gallina (probabilístico):** según el caos, el descontento y las decisiones previas, puede aparecer un segundo evento. En el cable hay que pulsar 4 chispazos y evitar el fusible rojo; en la gallina hay que atraparla 5 veces.
+- **Acto II — Foco roto (garantizado):** el foco estalla y hay que arrastrar 6 cristales a una bandeja antes de 10 s. Los tornillos son señuelos: pulsarlos resta 2 s. El reloj narrativo de 20 s queda pausado durante la reparación. Una linterna sigue al cursor sobre las tablas.
+- **Acto III — Cable / gallina (probabilístico):** según el caos, el descontento y las decisiones previas, puede aparecer un segundo evento. En el cable hay que arrastrar 4 chispazos a la caja de fusibles y evitar el fusible rojo; en la gallina hay que atraparla 5 veces.
 
 Los eventos pueden salir bien o mal. El resultado modifica confianza, coherencia, caos, descontento y satisfacción de los tres grupos. Si falla el foco, el escenario se queda a oscuras; si falla la gallina, el animal queda suelto. El parte de averías se guarda en el cuaderno de dirección.
 
@@ -218,7 +220,10 @@ La platea ya no es una barra: cada personita tiene cuerpo, grupo y reacción. Pu
 - aplaudir, levantarse, abuchear, mirar el móvil, bostezar o gritar;
 - lanzar tomates o flores;
 - insultar a los actores con bocadillos;
-- levantarse y abandonar la sala, dejando butacas vacías y reduciendo el aforo real.
+- levantarse y abandonar la sala, dejando butacas vacías y reduciendo el aforo real;
+- murmurar, toser, aplaudir y gritar con audio espacial de sala.
+
+La escena se ve antes que el panel de resultado: durante unos segundos la obra se representa en el escenario y después aparece el informe con la reacción y las consecuencias.
 
 ---
 
@@ -230,11 +235,12 @@ src/
   main.jsx
   components/
     TitleScreen.jsx           Portada
-    StageView.jsx             Escenario SVG, actores, atrezo, proscenio y accidentes
-    AudienceView.jsx          Personitas, reacciones, insults, cheers y abandonos
+    StageView.jsx             Escenario 2.5D, actores articulados, atrezo y efectos
+    AudienceView.jsx          Personitas, reacciones, gritos y abandonos
     ControlPanel.jsx          Mesa de operador, monitores y mandos
     CabinMonitor.jsx          CRT de escenario y platea
-    StageEventOverlay.jsx     Aviso técnico y minijuego de reparación
+    StageEventOverlay.jsx     Minijuego de reparación con arrastre y linterna
+    SceneInterlude.jsx        Puesta en escena antes del resultado
     CrisisPanel.jsx           Protocolos inline y modal de crisis
     StatusPanel.jsx           Estado completo de la función
     HistoryPanel.jsx          Cuaderno de dirección / memoria / parte de averías
@@ -248,9 +254,10 @@ src/
     audienceEngine.js         Grupos, reacciones, crisis, protocolos
     stageEvents.js            Definición de averías, objetivos y efectos
     stageEventEngine.js       Disparo, minijuego, timeout y consecuencias
+    stageChoreography.js      Traducción de la escena a acciones visuales
     gameEngine.js             Resolución de actos, crisis, finales, demo
     gameReducer.js            Acciones y transiciones
-    audio.js                  Web Audio API, sin assets externos
+    audio.js                  Web Audio API, ambiente de sala y efectos
     utils.js                  Helpers puros
     gameEngine.test.js        Tests del motor
     stageEventEngine.test.js  Tests de eventos técnicos
