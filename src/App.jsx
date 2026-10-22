@@ -8,6 +8,7 @@ import IncidentOverlay from './components/IncidentOverlay.jsx';
 import EndingScreen from './components/EndingScreen.jsx';
 import DemoPanel from './components/DemoPanel.jsx';
 import HistoryPanel from './components/HistoryPanel.jsx';
+import StageEventOverlay from './components/StageEventOverlay.jsx';
 import { createInitialState } from './game/initialState.js';
 import { gameReducer } from './game/gameReducer.js';
 import { INCIDENTS, GENRES, CONTROLS } from './game/storyData.js';
@@ -120,11 +121,19 @@ export default function App() {
     const ticking =
       ['incident', 'crisis'].includes(state.phase) &&
       state.timerRunning &&
-      !state.demo.paused;
+      !state.demo.paused &&
+      !state.stage?.activeEvent;
     if (!ticking) return undefined;
     const interval = window.setInterval(() => dispatch({ type: 'TICK' }), 1000);
     return () => window.clearInterval(interval);
-  }, [state.phase, state.timerRunning, state.demo.paused]);
+  }, [state.phase, state.timerRunning, state.demo.paused, state.stage?.activeEvent]);
+
+  useEffect(() => {
+    const event = state.stage?.activeEvent;
+    if (!event || event.phase !== 'active' || state.demo.paused) return undefined;
+    const interval = window.setInterval(() => dispatch({ type: 'STAGE_EVENT_TICK' }), 1000);
+    return () => window.clearInterval(interval);
+  }, [state.stage?.activeEvent?.id, state.stage?.activeEvent?.phase, state.demo.paused]);
 
   useEffect(() => {
     const keyMap = {
@@ -144,7 +153,7 @@ export default function App() {
       const targetTag = event.target?.tagName;
       const onFormControl = ['INPUT', 'TEXTAREA', 'SELECT'].includes(targetTag);
 
-      if (state.phase === 'incident') {
+      if (state.phase === 'incident' && !state.stage?.activeEvent) {
         const mapped = keyMap[event.key];
         if (mapped && !onFormControl) {
           const [kind, index] = mapped;
@@ -174,7 +183,7 @@ export default function App() {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [state.phase, state.selections, state.soundEnabled]);
+  }, [state.phase, state.selections, state.soundEnabled, state.stage?.activeEvent]);
 
   const toggleSound = () => {
     const next = !state.soundEnabled;
@@ -217,6 +226,7 @@ export default function App() {
             onSimulate={(sentiment) => dispatch({ type: 'DEMO_SIMULATE', sentiment })}
             onRestart={() => dispatch({ type: 'DEMO_RESTART' })}
             onToggleSound={toggleSound}
+            onForceStageEvent={() => dispatch({ type: 'DEMO_STAGE_EVENT' })}
           />
         ) : null}
       </div>
@@ -240,6 +250,7 @@ export default function App() {
             onSimulate={(sentiment) => dispatch({ type: 'DEMO_SIMULATE', sentiment })}
             onRestart={() => dispatch({ type: 'DEMO_RESTART' })}
             onToggleSound={toggleSound}
+            onForceStageEvent={() => dispatch({ type: 'DEMO_STAGE_EVENT' })}
           />
         ) : null}
       </div>
@@ -269,10 +280,12 @@ export default function App() {
             stats={stats}
             actors={state.actors}
             lastReaction={state.audience.lastReaction}
+            lastCrisisOutcome={state.lastCrisisOutcome}
             paused={state.demo.paused}
             timer={state.timer}
             timerMax={state.timerMax}
             crisis={state.crisis}
+            stage={state.stage}
           />
         </div>
 
@@ -283,10 +296,15 @@ export default function App() {
             onPreview={handlePreview}
             onExecute={() => dispatch({ type: 'EXECUTE_COMBO' })}
             onClear={() => dispatch({ type: 'CLEAR_SELECTION' })}
-            active={state.phase === 'incident'}
+            active={state.phase === 'incident' && !state.stage?.activeEvent}
             phase={state.phase}
             fallbackGenre={state.narrative.dominantGenre}
             timer={state.timer}
+            incident={incident}
+            audience={state.audience}
+            stats={stats}
+            lastReaction={state.audience.lastReaction}
+            stage={state.stage}
           />
           {state.phase === 'incident' ? (
             <CrisisPanel
@@ -325,6 +343,7 @@ export default function App() {
           onSimulate={(sentiment) => dispatch({ type: 'DEMO_SIMULATE', sentiment })}
           onRestart={() => dispatch({ type: 'DEMO_RESTART' })}
           onToggleSound={toggleSound}
+          onForceStageEvent={() => dispatch({ type: 'DEMO_STAGE_EVENT' })}
         />
       ) : null}
 
@@ -334,6 +353,15 @@ export default function App() {
         onBegin={() => dispatch({ type: 'BEGIN_INCIDENT' })}
         onContinue={() => dispatch({ type: 'CONTINUE' })}
       />
+
+      {state.stage?.activeEvent ? (
+        <StageEventOverlay
+          state={state}
+          event={state.stage.activeEvent}
+          onCollect={(targetId) => dispatch({ type: 'STAGE_EVENT_COLLECT', targetId })}
+          onClose={() => dispatch({ type: 'STAGE_EVENT_CLOSE' })}
+        />
+      ) : null}
 
       {state.phase === 'crisis' ? (
         <CrisisPanel

@@ -157,10 +157,13 @@ describe('motor de juego', () => {
     let state = beginIncident(startShow(createInitialState()));
     state = simulateReaction(state, 'positive');
     expect(state.audience.lastReaction.tone).toBe('positive');
+    expect(state.audience.lastReaction.type).toBeTruthy();
     expect(state.audience.lastReaction.simulated).toBe(true);
     state = simulateReaction(state, 'negative');
     expect(state.audience.lastReaction.tone).toBe('negative');
+    expect(state.audience.lastReaction.type).toBeTruthy();
     expect(state.audience.reactionHistory.length).toBe(2);
+    expect(state.audience.groups.romantics.reactions.length).toBe(2);
   });
 
   it('el salto de demo avanza sin dejar fases huérfanas', () => {

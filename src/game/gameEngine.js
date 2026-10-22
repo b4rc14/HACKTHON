@@ -526,6 +526,7 @@ export const computeEnding = (state) => {
     `Confianza ${Math.round(trust)}`,
     `Caos ${Math.round(state.chaos)}`,
     `${state.stats.crises} crisis`,
+    `${state.stage?.eventHistory?.length || 0} avería(s)`,
   ];
 
   return {

@@ -1,4 +1,5 @@
 import { INCIDENTS } from './storyData.js';
+import { createStageState } from './stageEventEngine.js';
 
 const group = (id, name, share, count, satisfaction, boredom) => ({
   id,
@@ -59,6 +60,7 @@ export const createInitialState = () => ({
     status: 'firmes',
     lastLine: 'Lía y Bruno esperan la primera indicación.',
   },
+  stage: createStageState(),
   chaos: 18,
   improv: 3,
   cooldowns: {

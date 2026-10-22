@@ -8,32 +8,120 @@ const GROUP_SHORT = {
   critics: 'CRÍTICOS',
 };
 
-const reactionMarks = (reaction) => {
-  if (!reaction) return ['', '', ''];
-  if (reaction.type === 'protest') return ['📣', '📣', '📣'];
-  if (reaction.type === 'walkout') return ['🚪', '', ''];
-  if (reaction.type === 'tomatoes') return ['🍅', '😠', '📱'];
-  if (reaction.type === 'boo') return ['👎', '👎', '📱'];
-  if (reaction.type === 'yawns') return ['💤', '💤', '🥱'];
-  if (reaction.type === 'ovation') return ['🌹', '🙌', '👏'];
-  if (reaction.type === 'flowers') return ['🌹', '😍', '👏'];
-  if (reaction.type === 'laughs') return ['😂', '😂', '🙂'];
-  if (reaction.type === 'applause') return ['👏', '👏', '👏'];
-  if (reaction.type === 'murmurs') return ['…', '…', '📝'];
-  return ['', '', ''];
+const REACTION_LINES = {
+  applause: ['¡Bravo!', '¡Así se hace!', '¡Más luces!'],
+  laughs: ['¡Ja! ¡El gazebo!', '¡Que salga la gallina!', '¡Otra vez!'],
+  flowers: ['¡Precioso!', '¡Me caso con el dinosaurio!', '¡Bis!'],
+  ovation: ['¡OBRA MAESTRA!', '¡BIS!', '¡Que salga el técnico!'],
+  boo: ['¡Esto no es amor!', '¡Devuélveme la entrada!', '¡El gazebo actuaba mejor!'],
+  tomatoes: ['¡Fuera, fuera!', '¡A la hoguera el guion!', '¡Esto es un atraco!'],
+  walkout: ['¡Nos vamos!', '¡Que alguien llame al técnico!', '¡No aguanto más!'],
+  protest: ['¡EXPLICACIONES!', '¡QUEREMOS UN BIS... O LA ENTRADA!', '¡FUERA EL DINOSAURIO!'],
+  murmurs: ['No entiendo nada...', '¿Esto venía en el guion?', 'Yo venía por el gazebo.'],
+  yawns: ['Qué sueño...', '¿Cuánto queda?', 'Esto no arranca.'],
 };
 
-const clusterSeats = (group, initialTotal) => {
-  const shareSeats = Math.round((group.count / initialTotal) * 34);
-  return Math.max(group.count > 0 ? 1 : 0, Math.min(18, shareSeats));
+const POSITIVE_TYPES = new Set(['applause', 'laughs', 'flowers', 'ovation']);
+const NEGATIVE_TYPES = new Set(['boo', 'tomatoes', 'walkout', 'protest']);
+const QUIET_TYPES = new Set(['murmurs', 'yawns']);
+
+const seatMood = (reaction, index) => {
+  if (!reaction) return index % 7 === 0 ? 'is-idle' : '';
+  if (reaction.type === 'protest') return 'is-standing is-heckling';
+  if (reaction.type === 'walkout') return index < 3 ? 'is-leaving' : 'is-shocked';
+  if (POSITIVE_TYPES.has(reaction.type)) return 'is-cheering';
+  if (NEGATIVE_TYPES.has(reaction.type)) return 'is-heckling';
+  if (reaction.type === 'yawns') return 'is-bored';
+  if (QUIET_TYPES.has(reaction.type)) return 'is-restless';
+  return '';
 };
 
-export default function AudienceView({ audience, stats, reaction, phase }) {
+const seatMark = (reaction, index) => {
+  if (!reaction) return '';
+  if (reaction.type === 'ovation') return index % 4 === 0 ? '🌹' : index % 4 === 1 ? '🙌' : '👏';
+  if (reaction.type === 'flowers') return index % 5 === 0 ? '🌹' : index % 5 === 1 ? '😍' : '👏';
+  if (reaction.type === 'applause') return index % 4 === 1 ? '👏' : '';
+  if (reaction.type === 'laughs') return index % 5 === 2 ? '😂' : '';
+  if (reaction.type === 'tomatoes') return index % 5 === 1 ? '🍅' : index % 5 === 2 ? '😠' : '';
+  if (reaction.type === 'boo') return index % 5 === 2 ? '👎' : index % 6 === 1 ? '📱' : '';
+  if (reaction.type === 'walkout') return index < 3 ? '🚪' : '';
+  if (reaction.type === 'protest') return index % 4 === 0 ? '📣' : '';
+  if (reaction.type === 'yawns') return index % 5 === 1 ? '💤' : '';
+  return '';
+};
+
+const groupSeats = (audience, initialTotal) =>
+  GROUP_ORDER.map((id) => {
+    const group = audience.groups[id];
+    return {
+      group,
+      count: Math.max(group.count > 0 ? 1 : 0, Math.round((group.count / initialTotal) * 40)),
+    };
+  });
+
+const splitRows = (seatGroups) => {
+  const back = seatGroups.map(({ group, count }) => ({
+    group,
+    count: Math.ceil(count * 0.4),
+  }));
+  const front = seatGroups.map(({ group, count }, index) => ({
+    group,
+    count: Math.max(0, count - back[index].count),
+  }));
+  return [back, front];
+};
+
+function Spectator({ group, index, reaction, row }) {
+  const mark = seatMark(reaction, index);
+  const mood = seatMood(reaction, index);
+  return (
+    <span
+      className={`spectator spectator--${group.id} ${mood} ${row === 'back' ? 'spectator--back' : ''}`}
+      style={{ '--person': index }}
+      aria-hidden="true"
+    >
+      {mark ? <span className="spectator__mark">{mark}</span> : null}
+      <span className="spectator__head">
+        <i className="spectator__hair" />
+      </span>
+      <span className="spectator__body">
+        <i className="spectator__prop" />
+      </span>
+      <span className="spectator__arms" />
+    </span>
+  );
+}
+
+function CrowdCluster({ group, seats, reaction, row }) {
+  return (
+    <span className={`crowd-cluster crowd-cluster--${group.id}`}>
+      {Array.from({ length: seats }, (_, index) => (
+        <Spectator
+          key={`${row}-${group.id}-${index}`}
+          group={group}
+          index={index + (row === 'back' ? 0 : 4)}
+          reaction={reaction}
+          row={row}
+        />
+      ))}
+    </span>
+  );
+}
+
+export default function AudienceView({ audience, stats, reaction, phase, interactionOutcome }) {
   const groups = GROUP_ORDER.map((id) => audience.groups[id]);
-  const marks = reactionMarks(reaction);
+  const [backRow, frontRow] = splitRows(groupSeats(audience, audience.initialTotal));
+  const emptySeats = Math.max(0, audience.initialTotal - stats.total);
   const positive = reaction?.tone === 'positive';
   const negative = reaction?.tone === 'negative';
-  const emptySeats = Math.max(0, audience.initialTotal - stats.total);
+  const lowest = [...groups].sort((a, b) => a.satisfaction - b.satisfaction)[0];
+  const highest = [...groups].sort((a, b) => b.satisfaction - a.satisfaction)[0];
+  const speaker = negative ? lowest : highest;
+  const lines = REACTION_LINES[reaction?.type] || [];
+  const interactionLine =
+    interactionOutcome?.actionId === 'engage'
+      ? 'El técnico acaba de mirar al público. La sala responde.'
+      : null;
 
   return (
     <section
@@ -42,7 +130,7 @@ export default function AudienceView({ audience, stats, reaction, phase }) {
     >
       <div className="audience-heading">
         <div>
-          <span className="audience-kicker">PLATEA</span>
+          <span className="audience-kicker">PLATEA · CAM 2</span>
           <strong className="audience-total">
             {stats.total} <span>/ {audience.initialTotal}</span>
           </strong>
@@ -58,50 +146,55 @@ export default function AudienceView({ audience, stats, reaction, phase }) {
         </div>
       </div>
 
-      <div className="audience-rows" aria-hidden="true">
-        {groups.map((group, groupIndex) => {
-          const seats = clusterSeats(group, audience.initialTotal);
-          const isLow = group.patience < 32;
-          const isBored = group.boredom > 58;
-          return (
-            <div key={group.id} className={`audience-cluster audience-cluster--${group.id}`}>
-              {Array.from({ length: seats }, (_, index) => {
-                const mark = marks[groupIndex];
-                return (
-                  <span
-                    key={`${group.id}-${index}`}
-                    className={[
-                      'seat',
-                      `seat--${group.id}`,
-                      positive ? 'seat--cheer' : '',
-                      negative ? 'seat--unhappy' : '',
-                      reaction?.type === 'protest' ? 'seat--standing' : '',
-                      isLow ? 'seat--low-patience' : '',
-                      isBored ? 'seat--bored' : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                    style={{ '--seat-delay': `${(index % 7) * 0.13 + groupIndex * 0.2}s` }}
-                  >
-                    <span className="seat__head" />
-                    <span className="seat__body" />
-                    {mark && index % 5 === 2 ? (
-                      <span className="seat__mark">{mark}</span>
-                    ) : null}
-                  </span>
-                );
-              })}
-            </div>
-          );
-        })}
-        {emptySeats > 0 ? (
-          <div className="audience-cluster audience-cluster--empty">
-            {Array.from({ length: Math.min(8, Math.ceil(emptySeats / 2)) }, (_, index) => (
-              <span key={`empty-${index}`} className="seat seat--empty">
-                <span className="seat__head" />
-                <span className="seat__body" />
+      <div className={`crowd-scene ${reaction?.type === 'walkout' ? 'has-walkout' : ''}`}>
+        <div className="crowd-screen" aria-hidden="true" />
+        <span className="exit-sign exit-sign--left">SALIDA</span>
+        <span className="exit-sign exit-sign--right">SALIDA</span>
+
+        <div className="crowd-rows" aria-hidden="true">
+          <div className="crowd-row crowd-row--back">
+            {backRow.map(({ group, count }) => (
+              <CrowdCluster key={`back-${group.id}`} group={group} seats={count} reaction={reaction} row="back" />
+            ))}
+          </div>
+          <div className="crowd-aisle" />
+          <div className="crowd-row crowd-row--front">
+            {frontRow.map(({ group, count }) => (
+              <CrowdCluster key={`front-${group.id}`} group={group} seats={count} reaction={reaction} row="front" />
+            ))}
+            {emptySeats > 0 ? (
+              <span className="crowd-empty" title={`${emptySeats} butacas vacías`}>
+                {Array.from({ length: Math.min(6, emptySeats) }, (_, index) => (
+                  <span key={index} className="empty-chair">⌑</span>
+                ))}
+              </span>
+            ) : null}
+          </div>
+        </div>
+
+        {reaction?.type === 'walkout' ? (
+          <div className="walkout-lane" aria-hidden="true">
+            {Array.from({ length: 3 }, (_, index) => (
+              <span key={index} className={`spectator spectator--${lowest.id} is-walking`} style={{ '--person': index }}>
+                <span className="spectator__head"><i className="spectator__hair" /></span>
+                <span className="spectator__body" />
+                <span className="spectator__arms" />
               </span>
             ))}
+            <span className="walkout-label">SE VAN</span>
+          </div>
+        ) : null}
+
+        {reaction?.type !== 'walkout' && lines.length ? (
+          <div className="audience-heckles" aria-live="polite">
+            <span className={`heckle-bubble heckle-bubble--one ${negative ? 'is-negative' : 'is-positive'}`}>
+              <b>{speaker.name}</b>
+              {lines[0]}
+            </span>
+            <span className={`heckle-bubble heckle-bubble--two ${negative ? 'is-negative' : 'is-positive'}`}>
+              <b>{negative ? 'OTRO ESPECTADOR' : 'PLATEA'}</b>
+              {lines[1] || lines[0]}
+            </span>
           </div>
         ) : null}
       </div>
@@ -114,13 +207,12 @@ export default function AudienceView({ audience, stats, reaction, phase }) {
           <div className="audience-reaction__title">
             <strong>{reaction?.label || 'La platea observa'}</strong>
             {reaction?.simulated ? <span className="demo-tag">SIMULADO</span> : null}
+            {interactionLine ? <span className="interaction-tag">INTERACCIÓN</span> : null}
           </div>
-          <p>{reaction?.cause || 'Todavía no hay veredicto. El público espera que pase algo.'}</p>
+          <p>{interactionLine || reaction?.cause || 'Todavía no hay veredicto. El público espera que pase algo.'}</p>
           <small>{reaction?.effect || 'Cada decisión mueve a los tres grupos de forma distinta.'}</small>
         </div>
       </div>
-
-      <div className="audience-floor" aria-hidden="true" />
     </section>
   );
 }

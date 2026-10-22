@@ -1,4 +1,5 @@
 import React from 'react';
+import CabinMonitor from './CabinMonitor.jsx';
 import {
   CONTROL_GROUPS,
   CONTROLS,
@@ -32,6 +33,11 @@ export default function ControlPanel({
   phase,
   fallbackGenre,
   timer,
+  incident,
+  audience,
+  stats,
+  lastReaction,
+  stage,
 }) {
   const selectedCount = ['lighting', 'sound', 'object'].filter(
     (kind) => selections?.[kind],
@@ -39,12 +45,42 @@ export default function ControlPanel({
   const complete = selectedCount === 3;
   const inclination = inferInclination(selections, fallbackGenre);
   const inclinationMeta = GENRES[inclination.genre];
+  const eventActive = Boolean(stage?.activeEvent);
 
   return (
-    <section className={`control-panel ${active ? '' : 'control-panel--locked'}`} aria-label="Cabina técnica">
+    <section className={`control-panel ${active ? '' : 'control-panel--locked'} ${eventActive ? 'control-panel--event' : ''}`} aria-label="Cabina técnica">
+      <div className="desk-top">
+        <div className="desk-plate">
+          <span className="desk-plate__screw" aria-hidden="true" />
+          <div>
+            <span className="panel-kicker">MESA DE CONTROL · ESCENARIO Y SALA</span>
+            <h2>Cabina del operador</h2>
+          </div>
+          <span className="desk-plate__screw" aria-hidden="true" />
+        </div>
+
+        <CabinMonitor
+          genre={fallbackGenre}
+          phase={phase}
+          incident={incident}
+          audience={audience}
+          stats={stats}
+          lastReaction={lastReaction}
+          timer={timer}
+          stage={stage}
+          selections={selections}
+        />
+
+        <div className="desk-statusstrip">
+          <span><i className={active ? 'is-live' : ''} /> {eventActive ? 'AVERÍA EN ESCENA' : active ? 'SEÑAL ESTABLE' : 'STANDBY'}</span>
+          <span>CANAL 1 / 2</span>
+          <span className="desk-statusstrip__lights" aria-hidden="true"><i /><i /><i /><i /></span>
+        </div>
+      </div>
+
       <div className="panel-heading">
         <div>
-          <span className="panel-kicker">CABINA TÉCNICA</span>
+          <span className="panel-kicker">MANDOS DE ESCENA</span>
           <h2>Improvisa el desastre</h2>
         </div>
         <span className={`panel-count ${complete ? 'is-ready' : ''}`}>{selectedCount}/3</span>
@@ -154,13 +190,15 @@ export default function ControlPanel({
 
       {!active ? (
         <p className="control-locked">
-          {phase === 'resolution'
-            ? 'La improvisación ya está en marcha. Lee el resultado.'
-            : phase === 'crisis'
-              ? 'La cabina espera: gestiona la crisis con los protocolos.'
-              : phase === 'briefing'
-                ? 'Sube el telón para desbloquear la cabina.'
-                : 'Cabina bloqueada.'}
+          {eventActive
+            ? 'Avería técnica en curso: el minijuego tiene prioridad. La mesa está bloqueada.'
+            : phase === 'resolution'
+              ? 'La improvisación ya está en marcha. Lee el resultado.'
+              : phase === 'crisis'
+                ? 'La cabina espera: gestiona la crisis con los protocolos.'
+                : phase === 'briefing'
+                  ? 'Sube el telón para desbloquear la cabina.'
+                  : 'Cabina bloqueada.'}
         </p>
       ) : timer <= 5 ? (
         <p className="control-warning">¡Quedan {timer} segundos! Elige y ejecuta.</p>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { GENRES, getControlDef } from '../game/storyData.js';
+import { STAGE_EVENTS } from '../game/stageEvents.js';
 
 const selectionIcons = (selection) => {
   if (!selection) return [];
@@ -61,6 +62,24 @@ export default function HistoryPanel({ state }) {
           use en la próxima escena.
         </p>
       )}
+
+      {state.stage?.eventHistory?.length ? (
+        <div className="history-events">
+          <span className="panel-kicker">PARTE DE AVERÍAS</span>
+          <ul>
+            {state.stage.eventHistory.slice(-3).reverse().map((event, index) => {
+              const def = STAGE_EVENTS[event.id];
+              return (
+                <li key={`${event.id}-${event.act}-${index}`} className={event.success ? 'is-success' : 'is-failure'}>
+                  <span aria-hidden="true">{event.success ? '✓' : '✕'}</span>
+                  <b>{def?.shortTitle || event.id}</b>
+                  <small>Acto {event.act}</small>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
 
       <div className="history-tags">
         <span className="panel-kicker">ELEMENTOS ESTABLECIDOS</span>

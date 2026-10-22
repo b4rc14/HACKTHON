@@ -21,11 +21,13 @@ export default function StatusPanel({ state, incident, stats, result }) {
   const actorStatus = ACTOR_STATUS[state.actors.status] || ACTOR_STATUS.firmes;
   const recent = state.audience.reactionHistory.slice(-3).reverse();
   const timerLabel =
-    state.phase === 'briefing'
-      ? `${state.timer}s`
-      : state.phase === 'resolution' || state.phase === 'ending'
-        ? 'ESCENA CERRADA'
-        : `${state.timer}s`;
+    state.stage?.activeEvent
+      ? `❚❚ ${state.timer}s`
+      : state.phase === 'briefing'
+        ? `${state.timer}s`
+        : state.phase === 'resolution' || state.phase === 'ending'
+          ? 'ESCENA CERRADA'
+          : `${state.timer}s`;
 
   return (
     <section className="status-panel" aria-label="Panel de estado">

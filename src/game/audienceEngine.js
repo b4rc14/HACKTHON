@@ -293,6 +293,7 @@ const reactionEntry = (state, type, cause, simulated) => {
   const meta = REACTION_META[type];
   return {
     ...meta,
+    type,
     cause,
     simulated: Boolean(simulated),
     scene: state.narrative.sceneCount || 1,

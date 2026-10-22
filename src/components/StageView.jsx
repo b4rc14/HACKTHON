@@ -1,6 +1,6 @@
 import React from 'react';
 import AudienceView from './AudienceView.jsx';
-import { GENRES } from '../game/storyData.js';
+import { GENRES, getControlDef } from '../game/storyData.js';
 
 const LIGHT_COLORS = {
   warm: '#ffc46b',
@@ -357,14 +357,23 @@ export default function StageView({
   stats,
   actors,
   lastReaction,
+  lastCrisisOutcome,
   paused,
   timer,
   timerMax,
   crisis,
+  stage,
 }) {
   const lightingId = selections?.lighting;
   const lightColor = LIGHT_COLORS[lightingId] || GENRE_LIGHT[genre] || GENRE_LIGHT.romance;
-  const blackout = incident?.id === 'blackout' && phase === 'incident' && !lightingId;
+  const activeEvent = stage?.activeEvent;
+  const brokenLight =
+    Boolean(stage?.persistentFx?.brokenLight) || activeEvent?.id === 'spotlight';
+  const sparks = Boolean(stage?.persistentFx?.sparks) || activeEvent?.id === 'cable';
+  const looseChicken =
+    Boolean(stage?.persistentFx?.looseChicken) || activeEvent?.id === 'chicken';
+  const blackout =
+    (incident?.id === 'blackout' && phase === 'incident' && !lightingId) || brokenLight;
   const lines =
     phase === 'resolution' || phase === 'crisis'
       ? result?.dialogue || incident?.openingLines || []
@@ -382,8 +391,13 @@ export default function StageView({
 
   const dinosaurVisible = incidentIndex >= 1;
   const selectedObject = selections?.object;
+  const selectedSound = getControlDef('sound', selections?.sound);
   const showCurtainsClosed = phase === 'briefing' || phase === 'crisis';
   const timerPercent = timerMax ? Math.max(0, Math.min(100, (timer / timerMax) * 100)) : 0;
+  const shake =
+    lastReaction?.type === 'tomatoes' ||
+    lastReaction?.type === 'protest' ||
+    (incident?.id === 'explosion' && phase === 'resolution');
 
   return (
     <section
@@ -392,6 +406,11 @@ export default function StageView({
         `stage-shell--${genre}`,
         `stage-shell--${phase}`,
         blackout ? 'is-blackout' : '',
+        brokenLight ? 'has-broken-light' : '',
+        sparks ? 'has-cable-sparks' : '',
+        looseChicken ? 'has-loose-chicken' : '',
+        activeEvent ? 'has-stage-event' : '',
+        shake ? 'is-shaking' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -410,6 +429,15 @@ export default function StageView({
       <div className="stage-scene">
         <SetPiece genre={genre} />
 
+        <div className="stage-depth" aria-hidden="true" />
+        <div className="stage-rig" aria-hidden="true">
+          <span className="rig-pipe" />
+          <span className={`rig-lamp rig-lamp--one ${brokenLight ? 'is-broken' : ''}`}><i /></span>
+          <span className="rig-lamp rig-lamp--two"><i /></span>
+          <span className="rig-lamp rig-lamp--three"><i /></span>
+          {brokenLight ? <span className="rig-broken-flicker" /> : null}
+        </div>
+
         <div className={`stage-light stage-light--${lightingId || genre}`} aria-hidden="true">
           <span className="stage-light__beam stage-light__beam--one" />
           <span className="stage-light__beam stage-light__beam--two" />
@@ -418,17 +446,17 @@ export default function StageView({
 
         <div className={`genre-decor genre-decor--${genre}`} aria-hidden="true">
           {genre === 'romance'
-            ? ['♥', '♥', '♥', '♥'].map((symbol, index) => (
+            ? ['♥', '♥', '♥', '♥', '❀'].map((symbol, index) => (
                 <span key={index} style={{ '--i': index }}>{symbol}</span>
               ))
             : null}
           {genre === 'comedy'
-            ? ['✶', '✦', '✶', '✦'].map((symbol, index) => (
+            ? ['✶', '✦', '✶', '✦', '●'].map((symbol, index) => (
                 <span key={index} style={{ '--i': index }}>{symbol}</span>
               ))
             : null}
           {genre === 'scifi'
-            ? ['◉', '◌', '◉', '✦'].map((symbol, index) => (
+            ? ['◉', '◌', '◉', '✦', '·'].map((symbol, index) => (
                 <span key={index} style={{ '--i': index }}>{symbol}</span>
               ))
             : null}
@@ -441,9 +469,28 @@ export default function StageView({
           <span className="curtain__fringe" />
         </div>
         <div className="valance" aria-hidden="true" />
+        <div className="proscenium" aria-hidden="true">
+          <span className="proscenium__top" />
+          <span className="proscenium__left" />
+          <span className="proscenium__right" />
+          <span className="proscenium__crest">✶</span>
+        </div>
+
+        <div className="dust-field" aria-hidden="true">
+          {Array.from({ length: 11 }, (_, index) => (
+            <span key={index} style={{ '--dust': index }} />
+          ))}
+        </div>
 
         {dinosaurVisible ? <DinosaurProp faded={incidentIndex === 2} /> : null}
         {selectedObject ? <PropArt type={selectedObject} /> : null}
+        {selectedSound ? (
+          <div className={`stage-sound-cue stage-sound-cue--${selectedSound.id}`} aria-label={`Sonido: ${selectedSound.label}`}>
+            <span className="stage-sound-cue__notes" aria-hidden="true">♫</span>
+            <span className="stage-sound-cue__bars" aria-hidden="true"><i /><i /><i /><i /></span>
+            <span className="stage-sound-cue__label">{selectedSound.label}</span>
+          </div>
+        ) : null}
 
         <div className={`actors ${showCurtainsClosed ? 'actors--peek' : ''}`}>
           <ActorFigure who="lia" mood={actorMood} speaking={activeSpeaker === 'LÍA'} />
@@ -451,12 +498,34 @@ export default function StageView({
         </div>
 
         <ReactionFx reaction={lastReaction} incident={incident} />
+        {incident?.id === 'explosion' && ['incident', 'resolution'].includes(phase) ? (
+          <div className="fallen-debris" aria-hidden="true">
+            <span className="fallen-beam" />
+            <span className="debris debris--one" />
+            <span className="debris debris--two" />
+            <span className="debris debris--three" />
+          </div>
+        ) : null}
+
+        {looseChicken && activeEvent?.id === 'chicken' ? (
+          <span className="prop prop--chicken prop--chicken-loose" aria-hidden="true">🐔</span>
+        ) : null}
+        {sparks ? (
+          <div className="cable-sparks" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+        ) : null}
 
         {blackout ? (
           <div className="blackout-layer" aria-hidden="true">
-            <span className="blackout-layer__line">SIN LUZ · EL PÚBLICO CONTIENE LA RESPIRACIÓN</span>
+            <span className="blackout-layer__line">
+              {brokenLight ? 'FOCO ROTO · EL TELAR ECHA CHISPAS' : 'SIN LUZ · EL PÚBLICO CONTIENE LA RESPIRACIÓN'}
+            </span>
           </div>
         ) : null}
+
 
         {phase === 'incident' ? (
           <div className="incident-ribbon">
@@ -514,6 +583,7 @@ export default function StageView({
         stats={stats}
         reaction={lastReaction}
         phase={phase}
+        interactionOutcome={lastCrisisOutcome}
       />
     </section>
   );

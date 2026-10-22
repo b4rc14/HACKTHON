@@ -21,13 +21,17 @@ El juego **se puede jugar completo**:
 - Confianza de actores, recursos de improvisación y nivel de caos.
 - Cuatro tipos de final y cartel personalizado descargable en SVG.
 - Modo demo para hackathon con reinicio, salto de acto, pausa, simulación de reacciones y snapshot JSON.
-- 9 pruebas automatizadas del motor.
+- Escenario enriquecido con proscenio, tramoya, lámparas, polvo, luces volumétricas y efectos de desastre.
+- Público formado por personitas individuales que aplauden, abuchean, insultan, lanzan cosas y abandonan la sala.
+- Eventos técnicos aleatorios con minijuegos: foco roto con cristales, chispas en el cable y gallina fugitiva.
+- Mesa de operador con monitores CRT en vivo de escenario y platea, mandos y botones de control.
+- 16 pruebas automatizadas del motor.
 
 ### Comprobaciones ejecutadas
 
 ```bash
 npm install
-npm test       # 9 tests pasan
+npm test       # 16 tests pasan
 npm run build  # build de producción correcto
 ```
 
@@ -64,9 +68,10 @@ No hace falta configurar variables de entorno.
 2. Lee el briefing del acto y pulsa **SUBIR EL TELÓN**. Ahí empiezan los 20 segundos.
 3. Elige **una luz**, **un sonido** y **un objeto** en la cabina técnica.
 4. Pulsa **¡IMPROVISAR!**. La combinación se evalúa y produce una escena, una reacción del público y consecuencias persistentes.
-5. Si aparece una crisis, elige uno de los cuatro protocolos antes de que se agote el tiempo (o deja pasar la crisis).
-6. Continúa al siguiente acto. La obra recuerda género, etiquetas, combinaciones y reacciones.
-7. Tras el acto III, llega el cartel final. Puedes descargarlo en SVG y volver a empezar.
+5. En el acto II aparecerá una avería técnica obligatoria. Resuelve el minijuego antes de que se agote su contador: los 20 s de la escena se pausan mientras reparas.
+6. Si aparece una crisis, elige uno de los cuatro protocolos antes de que se agote el tiempo (o deja pasar la crisis).
+7. Continúa al siguiente acto. La obra recuerda género, etiquetas, combinaciones y reacciones.
+8. Tras el acto III, llega el cartel final. Puedes descargarlo en SVG y volver a empezar.
 
 ### Reglas que importan
 
@@ -91,6 +96,7 @@ El botón **DEMO** de la cabecera abre un panel claramente identificado con:
 - Copiar un snapshot JSON del estado.
 
 Cerrar el panel mientras está pausado **reanuda el tiempo** para evitar bloqueos accidentales.
+- **Forzar foco roto** lanza el minijuego del foco durante el acto actual, ideal para enseñar la mecánica en la demo.
 
 ---
 
@@ -187,6 +193,33 @@ Además, **Dejar pasar la crisis** siempre está disponible para evitar cualquie
   - **CAOS MEMORABLE**: comedia/absurdo con caos alto y público todavía dentro.
   - **FRACASO**: la historia o la sala se rompen.
 
+### 4.7 Eventos técnicos y minijuegos
+
+El escenario también se rompe por su cuenta:
+
+- **Acto II — Foco roto (garantizado):** el foco estalla y hay que recoger 6 cristales antes de 10 s. Los tornillos son señuelos: pulsarlos resta 2 s. El reloj narrativo de 20 s queda pausado durante la reparación.
+- **Acto III — Cable / gallina (probabilístico):** según el caos, el descontento y las decisiones previas, puede aparecer un segundo evento. En el cable hay que pulsar 4 chispazos y evitar el fusible rojo; en la gallina hay que atraparla 5 veces.
+
+Los eventos pueden salir bien o mal. El resultado modifica confianza, coherencia, caos, descontento y satisfacción de los tres grupos. Si falla el foco, el escenario se queda a oscuras; si falla la gallina, el animal queda suelto. El parte de averías se guarda en el cuaderno de dirección.
+
+### 4.8 Mesa de operador
+
+La cabina tiene dos monitores CRT siempre visibles:
+
+- **CAM 1 · ESCENARIO:** luz actual, género, actores, objeto seleccionado y estado de avería.
+- **CAM 2 · PLATEA:** aforo, reacción actual y distribución visual de los grupos.
+
+Debajo están los mandos de iluminación, sonido y objetos. Los botones elegidos se iluminan y el botón de improvisar solo se activa con 3/3.
+
+### 4.9 Público individual
+
+La platea ya no es una barra: cada personita tiene cuerpo, grupo y reacción. Puede:
+
+- aplaudir, levantarse, abuchear, mirar el móvil, bostezar o gritar;
+- lanzar tomates o flores;
+- insultar a los actores con bocadillos;
+- levantarse y abandonar la sala, dejando butacas vacías y reduciendo el aforo real.
+
 ---
 
 ## 5. Estructura
@@ -197,12 +230,14 @@ src/
   main.jsx
   components/
     TitleScreen.jsx           Portada
-    StageView.jsx             Escenario SVG, actores, atrezo, incidentes
-    AudienceView.jsx          Platea, reacciones y causa visible
-    ControlPanel.jsx          Luces / sonido / objetos + ejecutar
+    StageView.jsx             Escenario SVG, actores, atrezo, proscenio y accidentes
+    AudienceView.jsx          Personitas, reacciones, insults, cheers y abandonos
+    ControlPanel.jsx          Mesa de operador, monitores y mandos
+    CabinMonitor.jsx          CRT de escenario y platea
+    StageEventOverlay.jsx     Aviso técnico y minijuego de reparación
     CrisisPanel.jsx           Protocolos inline y modal de crisis
     StatusPanel.jsx           Estado completo de la función
-    HistoryPanel.jsx          Cuaderno de dirección / memoria
+    HistoryPanel.jsx          Cuaderno de dirección / memoria / parte de averías
     IncidentOverlay.jsx       Briefing y resolución narrativa
     EndingScreen.jsx          Cartel final + export SVG
     DemoPanel.jsx             Herramientas de hackathon
@@ -211,15 +246,19 @@ src/
     storyData.js              Contenido: controles, actos, reacciones, crisis
     narrativeEngine.js        Puntuación de género, coherencia, diálogo, títulos
     audienceEngine.js         Grupos, reacciones, crisis, protocolos
+    stageEvents.js            Definición de averías, objetivos y efectos
+    stageEventEngine.js       Disparo, minijuego, timeout y consecuencias
     gameEngine.js             Resolución de actos, crisis, finales, demo
     gameReducer.js            Acciones y transiciones
     audio.js                  Web Audio API, sin assets externos
     utils.js                  Helpers puros
     gameEngine.test.js        Tests del motor
+    stageEventEngine.test.js  Tests de eventos técnicos
   styles/
     global.css                Layout, portada, modales, estado, final
     stage.css                 Escenario, actores, SVG, platea, animaciones
-    controls.css              Cabina, botones, crisis, historial
+    controls.css              Mesa de operador, monitores, botones e historial
+    stage-events.css          Eventos técnicos y minijuegos
 scripts/
   simulate.mjs                Simulador de balance
 ```
@@ -230,6 +269,10 @@ scripts/
 title
   └─ START_GAME → briefing
         └─ BEGIN_INCIDENT → incident ── TICK 0 ──┐
+              │                                  │
+              ├─ evento técnico (overlay, timer de escena pausado)
+              │      └─ STAGE_EVENT_TICK / COLLECT → resultado → VOLVER
+              │
               └─ EXECUTE_COMBO → resolution ←────┘
                     └─ CONTINUE
                           ├─ crisis pendiente → crisis → USE_ACTION → resolution
@@ -245,11 +288,11 @@ Todo el estado vive en `App.jsx` con `useReducer`. No hay estados duplicados en 
 
 El MVP prioriza que la partida sea completa. Quedan mejoras naturales:
 
-- **Animación de personajes**: SVG y CSS básicos; se pueden añadir más expresiones, lip-sync y transiciones.
+- **Animación de personajes**: SVG y CSS con expresiones y reacciones; sin animación esquelética ni lip-sync.
 - **Audio**: sintetizadores de Web Audio, sin mezcla ni música continua. Es opcional y tolera navegadores sin soporte.
 - **Persistencia**: no hay `localStorage` ni ranking; reiniciar recarga una partida limpia.
 - **Accesibilidad**: hay foco visible, `aria-pressed` y textos, pero puede mejorarse el anuncio del temporizador y la navegación por teclado de la cabina.
-- **Contenido**: tres incidentes y nueve controles. El sistema está preparado para más.
+- **Contenido**: tres incidentes, nueve controles y tres eventos técnicos. El sistema está preparado para más.
 - **Balance**: validado con tests y `scripts/simulate.mjs`, pero conviene ajustar tras playtesting real.
 - **Cartel**: exporta SVG (no PNG); es suficiente para imprimir o presentar.
 - **Móvil**: layout responsive implementado, pendiente de QA en dispositivos físicos.

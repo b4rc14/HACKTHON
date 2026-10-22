@@ -15,8 +15,8 @@ Guía para trabajar en paralelo después del MVP. La regla principal:
 | Motor narrativo | `src/game/narrativeEngine.js`, `initialState.js` | Diseño de mecánicas | Puntuación de género, coherencia, títulos |
 | Público y crisis | `src/game/audienceEngine.js`, tests de motor | Sistemas / balance | Deltas, umbrales, reacciones, protocolos |
 | Orquestación | `src/game/gameEngine.js`, `gameReducer.js` | Arquitectura / QA | Flujo de actos, finales, demo |
-| Escenario y arte | `src/components/StageView.jsx`, `AudienceView.jsx`, `stage.css` | Arte / frontend | SVG, animaciones, props visuales |
-| Cabina y UI | `ControlPanel.jsx`, `StatusPanel.jsx`, `CrisisPanel.jsx`, `HistoryPanel.jsx`, `controls.css` | UI / frontend | Layout, estilos, accesibilidad |
+| Escenario y arte | `StageView.jsx`, `AudienceView.jsx`, `CabinMonitor.jsx`, `StageEventOverlay.jsx`, `stage.css`, `stage-events.css` | Arte / frontend | SVG, animaciones, eventos técnicos, público |
+| Cabina y UI | `ControlPanel.jsx`, `StatusPanel.jsx`, `CrisisPanel.jsx`, `HistoryPanel.jsx`, `controls.css` | UI / frontend | Layout, monitores, estilos, accesibilidad |
 | Pantallas | `TitleScreen.jsx`, `EndingScreen.jsx`, `global.css` | UI / presentación | Portada, cartel, export SVG |
 | Demo/QA | `DemoPanel.jsx`, `scripts/simulate.mjs`, tests | QA | Herramientas de prueba |
 | Documentación | `README.md`, `TEAM_GUIDE.md` | Cualquiera | Mantener contratos al día |
@@ -88,6 +88,13 @@ El estado inicial está en `src/game/initialState.js`. Campos que otros módulos
     title
   },
   actors: { trust, glitches, status, lastLine },
+  stage: {
+    activeEvent,            // null | { id, phase, timer, targets, collected, ... }
+    eventHistory,           // eventos resueltos: id, act, success, ...
+    lastEventResult,
+    lastFeedback,
+    persistentFx: { brokenLight, sparks, looseChicken }
+  },
   chaos, improv,
   cooldowns: { dialogue, pacing, engage, curtain },
   result,                // evaluación del último acto
@@ -112,6 +119,10 @@ Todas se lanzan con `dispatch({ type, ...payload })`:
 | `CONTINUE` | — | Resolución → crisis / siguiente acto / final |
 | `TICK` | — | Baja timer; a 0 resuelve solo |
 | `USE_ACTION` | `actionId` | Protocolo de crisis o acción preventiva |
+| `STAGE_EVENT_TICK` | — | Baja el temporizador del minijuego; a 0 falla |
+| `STAGE_EVENT_COLLECT` | `targetId` | Recoge un cristal/chispazo/gallina o falla un señuelo |
+| `STAGE_EVENT_CLOSE` | — | Cierra el resultado y devuelve el control a la escena |
+| `DEMO_STAGE_EVENT` | `eventId?` | Fuerza un evento técnico para la demo |
 | `DEMO_TOGGLE_PANEL` | — | Abre/cierra demo; al cerrar reanuda |
 | `DEMO_TOGGLE_PAUSE` | — | Pausa/reanuda timer en incidente/crisis |
 | `DEMO_SKIP` | — | Salta de acto sin bloquear |
@@ -138,10 +149,12 @@ Todas se lanzan con `dispatch({ type, ...payload })`:
   stats={stats}                // getAudienceStats(audience)
   actors={state.actors}
   lastReaction={state.audience.lastReaction}
+  lastCrisisOutcome={state.lastCrisisOutcome}
   paused={state.demo.paused}
   timer={state.timer}
   timerMax={state.timerMax}
   crisis={state.crisis}
+  stage={state.stage}
 />
 ```
 
@@ -156,10 +169,15 @@ No debe llamar a dispatch. Para añadir arte, usad `selections`, `incident.id`, 
   onPreview={(kind, control) => ...}
   onExecute={() => ...}
   onClear={() => ...}
-  active={phase === 'incident'}
+  active={phase === 'incident' && !stage.activeEvent}
   phase={phase}
   fallbackGenre={dominantGenre}
   timer={timer}
+  incident={incident}
+  audience={audience}
+  stats={stats}
+  lastReaction={lastReaction}
+  stage={stage}
 />
 ```
 
@@ -256,12 +274,58 @@ No hace falta tocar React: `ControlPanel` recorre los arrays. Revisad que los te
 
 ---
 
-## 6. Receta: añadir una reacción del público
+## 6. Receta: añadir un evento técnico o minijuego
+
+Los eventos viven en `src/game/stageEvents.js` y su lógica pura en `stageEventEngine.js`.
+
+1. Añade una entrada a `STAGE_EVENTS`:
+
+```js
+spotlight: {
+  id: 'spotlight',
+  title: '¡EL FOCO HA EXPLOTADO!',
+  shortTitle: 'Foco roto',
+  icon: '✦',
+  subtitle: '...',
+  objective: 'Recoge los 6 cristales...',
+  targetLabel: 'Cristal',
+  targetPlural: 'CRISTALES',
+  targetIcon: '◆',
+  timer: 10,
+  tone: 'amber',
+  successTitle: 'LUZ RESTAURADA',
+  failTitle: 'ESCENARIO A OSCURAS',
+  successText: '...',
+  failText: '...',
+  successEffects: { trust: 7, coherence: 2, chaos: -3, groups: { romantics: 2 } },
+  failEffects: { trust: -6, coherence: -3, chaos: 6, groups: { romantics: -3 } },
+  targets: [
+    { id: 'shard-1', type: 'target', label: 'Cristal', icon: '◆', x: 16, y: 32, size: 'md' },
+    { id: 'screw-1', type: 'decoy', label: 'Tornillo', icon: '⚙', x: 24, y: 78, size: 'sm' }
+  ]
+}
+```
+
+2. Añade el disparo en `maybeStartStageEvent` (`stageEventEngine.js`). Para garantizar una demo, usa un acto concreto; para aleatoriedad, usa `pseudoRandom(seed)` con datos del estado (caos, confianza, decisiones...). **No uses `Math.random()` en reducers.**
+3. Los efectos se aplican en `finishStageEvent`. Si quieres una consecuencia visual persistente, añade una bandera a `persistentFx` y consúmela en `StageView`.
+4. Añade el arte del objetivo y del evento en `StageEventOverlay.jsx` y `stage-events.css`.
+5. Los tests de `stageEventEngine.test.js` deben cubrir: disparo, éxito, fallo por tiempo, señuelo y cierre.
+
+### Ajustar el minijuego
+
+- Duración: `timer` del evento.
+- Dificultad: número de objetivos, señuelos y penalización de señuelo (`-2 s` en `collectStageTarget`).
+- Recompensa/castigo: `successEffects` y `failEffects`.
+- El reloj narrativo principal se pausa mientras `state.stage.activeEvent` exista. No lo reactives desde otro componente.
+
+---
+
+## 7. Receta: añadir una reacción del público
 
 1. Añade la entrada en `REACTION_META` (`storyData.js`): `id`, `label`, `icon`, `tone`, `effect`.
 2. Añade la causa y el umbral en `determineReaction` (`audienceEngine.js`).
 3. Añade sus consecuencias en `applyReactionEffects` (satisfacción, trust, caos, timer, recursos, abandono...).
-4. Añade el marcador visual en `AudienceView.jsx` (`reactionMarks`) y, si toca escenario, en `StageView.jsx` (`ReactionFx`).
+4. Añade el marcador visual en `AudienceView.jsx` (`seatMood` / `seatMark` / `REACTION_LINES`) y, si toca escenario, en `StageView.jsx` (`ReactionFx`).
 5. Si la reacción debe activar crisis, añadid el tipo en `determineCrisis`.
 6. Comprobad que `REACTION_META[type]` existe siempre antes de llamar a `applyReactionEffects`; si no, `reactionEntry` fallaría.
 
@@ -286,7 +350,7 @@ Los tests comprueban que los cuatro finales siguen siendo alcanzables con estrat
 
 ---
 
-## 7. Añadir animaciones sin romper la lógica
+## 8. Añadir animaciones sin romper la lógica
 
 - Animad en CSS usando clases existentes (`phase`, `genre`, `is-selected`, `tone-*`, `is-speaking`, `lastReaction.type`).
 - Para nuevas animaciones, añadid clases al markup y keyframes en `stage.css`; no cambiéis el estado.
@@ -304,15 +368,15 @@ Los tests comprueban que los cuatro finales siguen siendo alcanzables con estrat
 
 ---
 
-## 8. Flujo de trabajo en paralelo
+## 9. Flujo de trabajo en paralelo
 
 Sugerencia para 5 personas:
 
 1. **Narrativa** trabaja en `storyData.js` y textos de `narrativeEngine` (sin tocar el resto del motor).
 2. **Balance** trabaja en `audienceEngine.js` + tests + `scripts/simulate.mjs`.
-3. **Arte/escenario** trabaja en `StageView.jsx`, `AudienceView.jsx`, `stage.css`.
+3. **Arte/escenario** trabaja en `StageView.jsx`, `AudienceView.jsx`, `CabinMonitor.jsx`, `StageEventOverlay.jsx`, `stage.css`, `stage-events.css`.
 4. **UI/cabina** trabaja en `ControlPanel.jsx`, `StatusPanel.jsx`, `CrisisPanel.jsx`, `HistoryPanel.jsx`, `controls.css`.
-5. **QA/orquestación** toca `gameEngine.js`, `gameReducer.js`, `DemoPanel.jsx`, `README`/`TEAM_GUIDE`.
+5. **QA/orquestación** toca `gameEngine.js`, `gameReducer.js`, `stageEventEngine.js`, `stageEvents.js`, `DemoPanel.jsx`, `README`/`TEAM_GUIDE`.
 
 Para evitar choques:
 
@@ -329,7 +393,7 @@ Todas parten del mismo commit de `main`:
 |---|---|---|
 | `feature/narrativa-contenido` | Nuevos actos, objetos, diálogos, títulos y callbacks | `storyData.js`, textos de `narrativeEngine.js`, `IncidentOverlay.jsx`, `EndingScreen.jsx` |
 | `feature/publico-balance` | Satisfacción, reacciones, crisis, dificultad y finales | `audienceEngine.js`, `gameEngine.js`, `scripts/simulate.mjs`, tests |
-| `feature/escenario-animacion` | SVGs, personajes, props, luces y animaciones | `StageView.jsx`, `AudienceView.jsx`, `stage.css` |
+| `feature/escenario-animacion` | SVGs, personajes, props, luces, público, eventos técnicos y animaciones | `StageView.jsx`, `AudienceView.jsx`, `CabinMonitor.jsx`, `StageEventOverlay.jsx`, `stage.css`, `stage-events.css` |
 | `feature/ui-cabina` | Cabina, paneles, historial, accesibilidad y estilos | `ControlPanel.jsx`, `CrisisPanel.jsx`, `StatusPanel.jsx`, `HistoryPanel.jsx`, `controls.css` |
 
 Crear una rama nueva a partir de `main`:
@@ -355,7 +419,7 @@ Subir una rama por primera vez:
 git push -u origin feature/narrativa-contenido
 ```
 
-> Las ramas se crean en local. El `push` se hace cuando el equipo decida publicarlas.
+> Las ramas ya están publicadas en `origin`; `git push -u origin feature/...` sirve para sus primeras subidas y `git push` para las siguientes.
 
 
 ### Checklist de merge
@@ -364,6 +428,7 @@ git push -u origin feature/narrativa-contenido
 - [ ] `npm test` pasa.
 - [ ] Se puede jugar una partida completa sin pantallas muertas.
 - [ ] El timer de 20 s resuelve solo al llegar a 0.
+- [ ] El foco roto se puede reparar o dejar fallar, y el reloj vuelve correctamente.
 - [ ] Una crisis se puede resolver o dejar pasar.
 - [ ] El botón Reiniciar vuelve a un estado inicial limpio.
 - [ ] No hay imágenes externas obligatorias.
@@ -371,7 +436,7 @@ git push -u origin feature/narrativa-contenido
 
 ---
 
-## 9. Tests actuales
+## 10. Tests actuales
 
 `src/game/gameEngine.test.js` cubre:
 
@@ -385,11 +450,21 @@ git push -u origin feature/narrativa-contenido
 8. Simulación positiva/negativa de demo.
 9. Salto de demo sin fases huérfanas.
 
+`src/game/stageEventEngine.test.js` cubre:
+
+1. Disparo garantizado del foco roto en el acto II.
+2. Pausa del reloj narrativo durante la avería.
+3. Éxito al recoger todos los cristales.
+4. Penalización de señuelo y fallo por timeout.
+5. Cierre del resultado y persistencia visual.
+6. Resumen de avería para la cabina.
+7. Posible segundo evento en el acto III.
+
 Los tests son de motor puro (Node). Si añadís tests de componentes, usad `@testing-library/react` y jsdom, pero mantened el núcleo sin dependencias de React.
 
 ---
 
-## 10. Deuda técnica priorizada (post-hackathon)
+## 11. Deuda técnica priorizada (post-hackathon)
 
 1. **Persistencia** de la última partida y de la mejor puntuación (`localStorage`).
 2. **Más contenido**: 5–6 incidentes, más objetos (espada, tarta, foco roto, karaoke) y variantes por confianza.
@@ -406,7 +481,7 @@ Los tests son de motor puro (Node). Si añadís tests de componentes, usad `@tes
 
 ---
 
-## 11. Convenciones rápidas
+## 12. Convenciones rápidas
 
 - Español para todo el texto de juego y documentación.
 - Nombres de estado y funciones en inglés (consistente con el motor actual).
