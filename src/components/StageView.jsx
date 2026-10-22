@@ -361,10 +361,14 @@ export default function StageView({
   timer,
   timerMax,
   crisis,
+  lightMix = {},
+  primaryLight = null,
 }) {
-  const lightingId = selections?.lighting;
-  const lightColor = LIGHT_COLORS[lightingId] || GENRE_LIGHT[genre] || GENRE_LIGHT.romance;
-  const blackout = incident?.id === 'blackout' && phase === 'incident' && !lightingId;
+  const lightColor = LIGHT_COLORS[primaryLight] || GENRE_LIGHT[genre] || GENRE_LIGHT.romance;
+  const blackout = incident?.id === 'blackout' && phase === 'incident' && !primaryLight;
+  const activeLights = Object.keys(LIGHT_COLORS)
+    .filter((id) => (Number(lightMix?.[id]) || 0) > 0)
+    .map((id) => ({ id, level: Math.max(0, Math.min(100, Number(lightMix[id]))) }));
   const lines =
     phase === 'resolution' || phase === 'crisis'
       ? result?.dialogue || incident?.openingLines || []
@@ -410,11 +414,33 @@ export default function StageView({
       <div className="stage-scene">
         <SetPiece genre={genre} />
 
-        <div className={`stage-light stage-light--${lightingId || genre}`} aria-hidden="true">
-          <span className="stage-light__beam stage-light__beam--one" />
-          <span className="stage-light__beam stage-light__beam--two" />
-          <span className="stage-light__beam stage-light__beam--three" />
-        </div>
+        {activeLights.length ? (
+          activeLights.map(({ id, level }) => (
+            <div
+              key={id}
+              className={`stage-light stage-light--${id} is-mixed`}
+              style={{
+                '--stage-light': LIGHT_COLORS[id],
+                opacity: 0.15 + (level / 100) * 0.7,
+              }}
+              aria-hidden="true"
+            >
+              <span className="stage-light__beam stage-light__beam--one" />
+              <span className="stage-light__beam stage-light__beam--two" />
+              <span className="stage-light__beam stage-light__beam--three" />
+            </div>
+          ))
+        ) : (
+          <div
+            className={`stage-light stage-light--${genre}`}
+            style={{ '--stage-light': lightColor }}
+            aria-hidden="true"
+          >
+            <span className="stage-light__beam stage-light__beam--one" />
+            <span className="stage-light__beam stage-light__beam--two" />
+            <span className="stage-light__beam stage-light__beam--three" />
+          </div>
+        )}
 
         <div className={`genre-decor genre-decor--${genre}`} aria-hidden="true">
           {genre === 'romance'

@@ -3,7 +3,16 @@
 
 let context = null;
 let master = null;
+let fxBus = null;
 let muted = false;
+
+// 0..1 desde los faders de la consola. El master real se queda en un techo
+// equivalente al antiguo 0.22 para no reventar los oídos.
+const MAX_GAIN = 0.4;
+let volume = 0.55;
+let fxLevel = 0.85;
+
+const masterGain = () => MAX_GAIN * volume;
 
 const ensureContext = () => {
   if (typeof window === 'undefined') return null;
@@ -12,8 +21,11 @@ const ensureContext = () => {
   if (!context) {
     context = new AudioContextClass();
     master = context.createGain();
-    master.gain.value = muted ? 0 : 0.22;
+    master.gain.value = muted ? 0 : masterGain();
     master.connect(context.destination);
+    fxBus = context.createGain();
+    fxBus.gain.value = fxLevel;
+    fxBus.connect(master);
   }
   if (context.state === 'suspended') {
     context.resume().catch(() => {});
@@ -24,7 +36,23 @@ const ensureContext = () => {
 export const setMuted = (value) => {
   muted = Boolean(value);
   if (master && context) {
-    master.gain.setTargetAtTime(muted ? 0 : 0.22, context.currentTime, 0.02);
+    master.gain.setTargetAtTime(muted ? 0 : masterGain(), context.currentTime, 0.02);
+  }
+};
+
+export const setVolume = (value) => {
+  const next = Number(value);
+  if (Number.isFinite(next)) volume = Math.max(0, Math.min(1, next));
+  if (master && context && !muted) {
+    master.gain.setTargetAtTime(masterGain(), context.currentTime, 0.03);
+  }
+};
+
+export const setFxVolume = (value) => {
+  const next = Number(value);
+  if (Number.isFinite(next)) fxLevel = Math.max(0, Math.min(1, next));
+  if (fxBus && context) {
+    fxBus.gain.setTargetAtTime(fxLevel, context.currentTime, 0.03);
   }
 };
 
@@ -51,7 +79,7 @@ const tone = ({
   gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), now + 0.015);
   gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
   osc.connect(gain);
-  gain.connect(master);
+  gain.connect(fxBus || master);
   osc.start(now);
   osc.stop(now + duration + 0.03);
 };
@@ -76,7 +104,7 @@ const noise = ({ duration = 0.4, volume = 0.18, filter = 1200, delay = 0 }) => {
   gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
   source.connect(biquad);
   biquad.connect(gain);
-  gain.connect(master);
+  gain.connect(fxBus || master);
   source.start(now);
   source.stop(now + duration);
 };

@@ -1,20 +1,24 @@
-import React, { useEffect, useMemo, useReducer } from 'react';
+import React, { useEffect, useMemo, useReducer, useState } from 'react';
 import TitleScreen from './components/TitleScreen.jsx';
 import StageView from './components/StageView.jsx';
 import ControlPanel from './components/ControlPanel.jsx';
-import StatusPanel from './components/StatusPanel.jsx';
 import CrisisPanel from './components/CrisisPanel.jsx';
 import IncidentOverlay from './components/IncidentOverlay.jsx';
 import EndingScreen from './components/EndingScreen.jsx';
 import DemoPanel from './components/DemoPanel.jsx';
-import HistoryPanel from './components/HistoryPanel.jsx';
 import { createInitialState } from './game/initialState.js';
 import { gameReducer } from './game/gameReducer.js';
 import { INCIDENTS, GENRES, CONTROLS } from './game/storyData.js';
 import { getAudienceStats } from './game/audienceEngine.js';
 import { getTimerPercent } from './game/gameEngine.js';
 import { selectionIsComplete } from './game/narrativeEngine.js';
-import { playCue, previewControl, setMuted } from './game/audio.js';
+import {
+  playCue,
+  previewControl,
+  setFxVolume,
+  setMuted,
+  setVolume,
+} from './game/audio.js';
 
 const PHASE_LABEL = {
   title: 'CARTEL',
@@ -23,6 +27,21 @@ const PHASE_LABEL = {
   resolution: 'RESULTADO',
   crisis: 'CRISIS',
   ending: 'TELÓN FINAL',
+};
+
+// Margen para cambiar la última elección antes de ejecutar el combo.
+const EXECUTE_GRACE_MS = 2000;
+
+// Mezcla de luces: visual, independiente por fader. El motor solo puntúa la principal.
+const LIGHT_IDS = CONTROLS.lighting.map((control) => control.id);
+const EMPTY_LIGHT_MIX = Object.fromEntries(LIGHT_IDS.map((id) => [id, 0]));
+
+const primaryLightFor = (mix, last) => {
+  const levels = LIGHT_IDS.map((id) => Number(mix?.[id]) || 0);
+  const top = Math.max(0, ...levels);
+  if (top <= 0) return null;
+  const tied = LIGHT_IDS.filter((id) => (Number(mix?.[id]) || 0) === top);
+  return tied.includes(last) ? last : tied[0];
 };
 
 function TopBar({ state, incident, onToggleSound, onToggleDemo, onRestart }) {
@@ -103,12 +122,35 @@ function TopBar({ state, incident, onToggleSound, onToggleDemo, onRestart }) {
 
 export default function App() {
   const [state, dispatch] = useReducer(gameReducer, undefined, createInitialState);
+  const [lightMix, setLightMix] = useState(() => ({ ...EMPTY_LIGHT_MIX }));
+  const [lastLight, setLastLight] = useState(null);
+  const [masterVolume, setMasterVolume] = useState(0.55);
+  const [fxVolume, setFxLevel] = useState(0.85);
   const incident = INCIDENTS[state.incidentIndex] || INCIDENTS[0];
   const stats = useMemo(() => getAudienceStats(state.audience), [state.audience]);
+  const primaryLight = primaryLightFor(lightMix, lastLight);
+  const comboSignature = selectionIsComplete(state.selections)
+    ? `${state.selections.lighting}|${state.selections.sound}|${state.selections.object}`
+    : null;
 
   useEffect(() => {
     setMuted(!state.soundEnabled);
   }, [state.soundEnabled]);
+
+  // Cada acto empieza con la mesa de luces a cero.
+  useEffect(() => {
+    if (state.phase !== 'briefing') return;
+    setLightMix({ ...EMPTY_LIGHT_MIX });
+    setLastLight(null);
+  }, [state.phase, state.incidentIndex]);
+
+  useEffect(() => {
+    setVolume(masterVolume);
+  }, [masterVolume]);
+
+  useEffect(() => {
+    setFxVolume(fxVolume);
+  }, [fxVolume]);
 
   useEffect(() => {
     if (state.soundCue?.type) {
@@ -125,6 +167,17 @@ export default function App() {
     const interval = window.setInterval(() => dispatch({ type: 'TICK' }), 1000);
     return () => window.clearInterval(interval);
   }, [state.phase, state.timerRunning, state.demo.paused]);
+
+  // Sin botón de improvisar: el combo se ejecuta solo tras la ventana de gracia.
+  // Cambiar o soltar un control durante ese margen cancela la cuenta.
+  useEffect(() => {
+    if (state.phase !== 'incident' || !comboSignature) return undefined;
+    const grace = window.setTimeout(
+      () => dispatch({ type: 'EXECUTE_COMBO' }),
+      EXECUTE_GRACE_MS,
+    );
+    return () => window.clearTimeout(grace);
+  }, [state.phase, comboSignature]);
 
   useEffect(() => {
     const keyMap = {
@@ -151,17 +204,15 @@ export default function App() {
           const control = CONTROLS[kind][index];
           if (control) {
             event.preventDefault();
-            dispatch({ type: 'SELECT_CONTROL', kind, id: control.id });
+            if (kind === 'lighting') {
+              const currentLevel = lightMix?.[control.id] || 0;
+              selectLight(control.id, currentLevel > 0 ? 0 : 100);
+            } else {
+              dispatch({ type: 'SELECT_CONTROL', kind, id: control.id });
+            }
             if (state.soundEnabled) previewControl(kind, control);
           }
           return;
-        }
-        if (
-          (event.key === 'Enter' || (event.key === ' ' && targetTag !== 'BUTTON')) &&
-          selectionIsComplete(state.selections)
-        ) {
-          event.preventDefault();
-          dispatch({ type: 'EXECUTE_COMBO' });
         }
         return;
       }
@@ -174,7 +225,7 @@ export default function App() {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [state.phase, state.selections, state.soundEnabled]);
+  }, [state.phase, state.soundEnabled, state.selections, lightMix]);
 
   const toggleSound = () => {
     const next = !state.soundEnabled;
@@ -202,6 +253,17 @@ export default function App() {
 
   const handlePreview = (kind, control) => {
     if (state.soundEnabled) previewControl(kind, control);
+  };
+
+  const selectLight = (id, value) => {
+    const next = Math.max(0, Math.min(100, Number(value) || 0));
+    const nextMix = { ...lightMix, [id]: next };
+    setLightMix(nextMix);
+    setLastLight(id);
+    const nextPrimary = primaryLightFor(nextMix, id);
+    if (nextPrimary !== state.selections.lighting) {
+      dispatch({ type: 'SELECT_CONTROL', kind: 'lighting', id: nextPrimary });
+    }
   };
 
   if (state.phase === 'title') {
@@ -247,7 +309,7 @@ export default function App() {
   }
 
   return (
-    <div className={`app-shell app-shell--${state.phase}`}>
+    <div className={`app-shell app-shell--${state.phase} app-shell--console`}>
       <TopBar
         state={state}
         incident={incident}
@@ -273,48 +335,39 @@ export default function App() {
             timer={state.timer}
             timerMax={state.timerMax}
             crisis={state.crisis}
+            lightMix={lightMix}
+            primaryLight={primaryLight}
           />
         </div>
-
-        <aside className="cabina-column">
-          <ControlPanel
-            selections={state.selections}
-            onSelect={(kind, id) => dispatch({ type: 'SELECT_CONTROL', kind, id })}
-            onPreview={handlePreview}
-            onExecute={() => dispatch({ type: 'EXECUTE_COMBO' })}
-            onClear={() => dispatch({ type: 'CLEAR_SELECTION' })}
-            active={state.phase === 'incident'}
-            phase={state.phase}
-            fallbackGenre={state.narrative.dominantGenre}
-            timer={state.timer}
-          />
-          {state.phase === 'incident' ? (
-            <CrisisPanel
-              state={state}
-              mode="inline"
-              onAction={(actionId) => dispatch({ type: 'USE_ACTION', actionId })}
-            />
-          ) : null}
-          <div className="cabina-note">
-            <span className="panel-kicker">REGLA DE ORO</span>
-            <p>
-              No hay combinación perfecta. Si repites, el público se aburre. Si cambias de género,
-              necesitas un puente con lo anterior.
-            </p>
-            <span className="cabina-note__genre" style={{ color: GENRES[state.narrative.dominantGenre].color }}>
-              {GENRES[state.narrative.dominantGenre].tagline}
-            </span>
-          </div>
-          <HistoryPanel state={state} />
-        </aside>
-
-        <StatusPanel state={state} incident={incident} stats={stats} result={state.result} />
       </main>
 
-      <footer className="app-footer">
-        <span>THE SHOW MUST MUTATE · v0.1 · Hackathon build</span>
-        <span>1–9: elegir · ENTER: improvisar · DEMO: probar · REPETIR: mala idea</span>
-      </footer>
+      <ControlPanel
+        selections={state.selections}
+        onSelect={(kind, id) => dispatch({ type: 'SELECT_CONTROL', kind, id })}
+        onPreview={handlePreview}
+        onLightLevel={selectLight}
+        onClear={() => dispatch({ type: 'CLEAR_SELECTION' })}
+        active={state.phase === 'incident'}
+        phase={state.phase}
+        fallbackGenre={state.narrative.dominantGenre}
+        timer={state.timer}
+        timerMax={state.timerMax}
+        graceMs={EXECUTE_GRACE_MS}
+        lightMix={lightMix}
+        primaryLight={primaryLight}
+        masterVolume={masterVolume}
+        onMasterVolume={setMasterVolume}
+        fxVolume={fxVolume}
+        onFxVolume={setFxLevel}
+      >
+        {state.phase === 'incident' ? (
+          <CrisisPanel
+            state={state}
+            mode="inline"
+            onAction={(actionId) => dispatch({ type: 'USE_ACTION', actionId })}
+          />
+        ) : null}
+      </ControlPanel>
 
       {state.demo.open ? (
         <DemoPanel

@@ -108,7 +108,7 @@ Todas se lanzan con `dispatch({ type, ...payload })`:
 | `BEGIN_INCIDENT` | — | Briefing → incidente, arranca timer |
 | `SELECT_CONTROL` | `kind`, `id` | Marca/deselecciona un control |
 | `CLEAR_SELECTION` | — | Vacía los tres controles |
-| `EXECUTE_COMBO` | — | Resuelve la combinación (solo con 3/3) |
+| `EXECUTE_COMBO` | — | Resuelve la combinación (solo con 3/3). La UI la lanza sola 2 s después de completar el combo; la acción sigue disponible para tests y demo |
 | `CONTINUE` | — | Resolución → crisis / siguiente acto / final |
 | `TICK` | — | Baja timer; a 0 resuelve solo |
 | `USE_ACTION` | `actionId` | Protocolo de crisis o acción preventiva |
@@ -142,10 +142,12 @@ Todas se lanzan con `dispatch({ type, ...payload })`:
   timer={state.timer}
   timerMax={state.timerMax}
   crisis={state.crisis}
+  lightMix={{ warm: 80, scifi: 40, comic: 0 }}  // 0–100; pinta una capa por luz
+  primaryLight="warm"                           // color de referencia y apagón
 />
 ```
 
-No debe llamar a dispatch. Para añadir arte, usad `selections`, `incident.id`, `result.dominantGenre`, `lastReaction.type` y las clases de fase.
+No debe llamar a dispatch. Para añadir arte, usad `selections`, `incident.id`, `result.dominantGenre`, `lastReaction.type` y las clases de fase. Con `lightMix` se renderizan hasta tres capas `.stage-light` (sumadas con `mix-blend-mode: screen`); `primaryLight` decide el color de referencia y si hay apagón. La narrativa sigue usando solo `selections.lighting`.
 
 ### `ControlPanel`
 
@@ -154,16 +156,32 @@ No debe llamar a dispatch. Para añadir arte, usad `selections`, `incident.id`, 
   selections={...}
   onSelect={(kind, id) => ...}
   onPreview={(kind, control) => ...}
-  onExecute={() => ...}
+  onLightLevel={(id, level) => ...}   // 20–100, elige la luz y fija intensidad
   onClear={() => ...}
   active={phase === 'incident'}
   phase={phase}
   fallbackGenre={dominantGenre}
   timer={timer}
-/>
+  timerMax={timerMax}
+  graceMs={2000}
+  lightMix={{ warm: 80, scifi: 40, comic: 0 }}  // 0–100 por luz; mezcla visual
+  primaryLight="warm"                           // la más alta; empate → última tocada
+  masterVolume={0.55}                 // 0–1
+  onMasterVolume={(value) => ...}
+  fxVolume={0.85}                     // 0–1
+  onFxVolume={(value) => ...}
+>
+  {phase === 'incident' ? <CrisisPanel mode="inline" ... /> : null}
+</ControlPanel>
 ```
 
-`CONTROLS` y `CONTROL_GROUPS` salen de `storyData.js`. Si añadís un control, añadid también su estilo de color y comprobad la inclinación.
+- La consola vive fija al pie (`.control-desk`) con cuatro bahías: **ILUMINACIÓN** (3 faders), **MONITOR** (anillo + vúmetro + objetos + combo), **SONIDO** (3 teclas + VOL/FX) y **CONTROL DE SALA** (protocolos).
+- Los tres faders de luz son independientes y se mezclan en escena. `onLightLevel` actualiza `lightMix`; **el motor solo recibe `primaryLight`** (mayor intensidad, empate → última tocada), así que la mezcla no altera género, etiquetas ni balance.
+- `masterVolume` / `fxVolume` son estado de UI y se aplican en `audio.js` (`setVolume` / `setFxVolume`).
+- `timer` + `timerMax` alimentan el anillo del monitor; `graceMs` debe coincidir con `EXECUTE_GRACE_MS` de `App.jsx` (la auto-ejecución vive ahí).
+- `children` se pinta en la bahía de protocolos. Ya no hay botón de ejecutar ni prop `onExecute`.
+
+`CONTROLS` y `GENRES` salen de `storyData.js`. Si añadís un control, comprobad que el texto cabe en la tecla/fader y que su número de atajo coincide con la posición (1–9). La consola es monocroma a propósito: el género se indica con texto, no con color. `StatusPanel`, `HistoryPanel` y la nota de regla de oro están parkeados (los archivos siguen ahí, pero no se montan en la partida).
 
 ### `CrisisPanel`
 
@@ -175,7 +193,7 @@ No debe llamar a dispatch. Para añadir arte, usad `selections`, `incident.id`, 
 />
 ```
 
-`mode="inline"` se muestra en la cabina durante el acto. `mode="modal"` se monta cuando `state.phase === 'crisis'`.
+`mode="inline"` se monta dentro de `ControlPanel` (como `children`) durante el acto, en la misma caja metálica. `mode="modal"` se monta cuando `state.phase === 'crisis'` y conserva el lenguaje de alarma rojo.
 
 ### `IncidentOverlay`
 

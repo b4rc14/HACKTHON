@@ -13,7 +13,7 @@ El juego **se puede jugar completo**:
 
 - Portada y arranque de partida.
 - Tres actos con incidente, introducción, temporizador de 20 s y resolución.
-- Cabina con 3 luces, 3 sonidos y 3 objetos.
+- Consola inferior fija con 3 faders de luz, 3 teclas de sonido, 3 objetos, rieles de volumen y protocolos integrados.
 - Combinaciones con puntuación por género, memoria narrativa y penalización por repetición.
 - Tres grupos de público con satisfacción, aburrimiento, paciencia y reacciones propias.
 - Aplausos, carcajadas, flores, ovación, murmullos, bostezos, abucheos, tomatazos, abandono y protesta.
@@ -62,8 +62,8 @@ No hace falta configurar variables de entorno.
 
 1. Pulsa **EMPEZAR LA FUNCIÓN**.
 2. Lee el briefing del acto y pulsa **SUBIR EL TELÓN**. Ahí empiezan los 20 segundos.
-3. Elige **una luz**, **un sonido** y **un objeto** en la cabina técnica.
-4. Pulsa **¡IMPROVISAR!**. La combinación se evalúa y produce una escena, una reacción del público y consecuencias persistentes.
+3. En la consola de abajo, sube **uno o varios faders de luz** (se mezclan en escena; la luz principal es la más alta y es la que puntúa), elige **un sonido** y **un objeto**. Los rieles `VOL` y `FX` ajustan el volumen real.
+4. Al conectar el tercer control la consola te da **2 segundos de margen** para cambiar de idea y después ejecuta la combinación sola. La escena, la reacción del público y las consecuencias son inmediatas.
 5. Si aparece una crisis, elige uno de los cuatro protocolos antes de que se agote el tiempo (o deja pasar la crisis).
 6. Continúa al siguiente acto. La obra recuerda género, etiquetas, combinaciones y reacciones.
 7. Tras el acto III, llega el cartel final. Puedes descargarlo en SVG y volver a empezar.
@@ -71,6 +71,7 @@ No hace falta configurar variables de entorno.
 ### Reglas que importan
 
 - **No hay una combinación única correcta.** Cada control aporta puntos a uno o dos géneros.
+- Puedes mezclar las tres luces, pero **solo la principal puntúa**: la de mayor intensidad (empate: la última que toques). La mezcla es visual.
 - La primera escena establece el tono. En las siguientes, cambiar de género sin un puente narrativo penaliza la coherencia.
 - Reutilizar una etiqueta ya establecida (por ejemplo, `alien`, `music`, `absurd`) da bonus de continuidad.
 - **Repetir exactamente la misma combinación** aplica una penalización fuerte y provoca una reacción negativa.
@@ -79,7 +80,7 @@ No hace falta configurar variables de entorno.
 
 ### Atajos y modo demo
 
-Atajos de cabina: `1–3` iluminación, `4–6` sonido, `7–9` objeto y `Enter` para improvisar. En el briefing, `Enter` sube el telón.
+Atajos de cabina: `1–3` iluminación, `4–6` sonido, `7–9` objeto. Al completar luz + sonido + objeto, la combinación se improvisa sola tras 2 segundos. En el briefing, `Enter` sube el telón. Los faders también responden a las flechas del teclado cuando tienen el foco.
 
 El botón **DEMO** de la cabecera abre un panel claramente identificado con:
 
@@ -199,10 +200,10 @@ src/
     TitleScreen.jsx           Portada
     StageView.jsx             Escenario SVG, actores, atrezo, incidentes
     AudienceView.jsx          Platea, reacciones y causa visible
-    ControlPanel.jsx          Luces / sonido / objetos + ejecutar
-    CrisisPanel.jsx           Protocolos inline y modal de crisis
-    StatusPanel.jsx           Estado completo de la función
-    HistoryPanel.jsx          Cuaderno de dirección / memoria
+    ControlPanel.jsx          Consola inferior: faders de luz, monitor, sonido y protocolos
+    CrisisPanel.jsx           Protocolos inline (dentro de la consola) y modal de crisis
+    StatusPanel.jsx           Estado completo (parkeado, no se monta en partida)
+    HistoryPanel.jsx          Cuaderno de dirección (parkeado, no se monta en partida)
     IncidentOverlay.jsx       Briefing y resolución narrativa
     EndingScreen.jsx          Cartel final + export SVG
     DemoPanel.jsx             Herramientas de hackathon
@@ -230,7 +231,7 @@ scripts/
 title
   └─ START_GAME → briefing
         └─ BEGIN_INCIDENT → incident ── TICK 0 ──┐
-              └─ EXECUTE_COMBO → resolution ←────┘
+              └─ 3/3 auto (2 s) → resolution ←──┘
                     └─ CONTINUE
                           ├─ crisis pendiente → crisis → USE_ACTION → resolution
                           ├─ quedan actos → briefing
