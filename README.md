@@ -11,16 +11,17 @@ MVP jugable de principio a fin para hackathon. React + Vite + JavaScript + CSS +
 
 El juego **se puede jugar completo**:
 
-- Portada y arranque de partida.
-- Tres actos con incidente, introducción, temporizador de 20 s y resolución.
-- Cabina con 3 luces, 3 sonidos y 3 objetos.
+- Portada con selección de obra y arranque de partida.
+- Función continua de 3 minutos: escenas encadenadas, sin briefing entre actos.
+- Mazo de escenas barajado por partida y varias obras con repertorios distintos.
+- Cabina con 3 luces mezclables, 3 sonidos y 3 objetos.
 - Combinaciones con puntuación por género, memoria narrativa y penalización por repetición.
 - Platea de 60 personas individuales con criticidad, satisfacción, paciencia y abandono animado.
 - Aplausos, carcajadas, flores, ovación, murmullos, bostezos, abucheos, tomatazos, abandono y protesta.
 - Crisis con cuatro protocolos, costes, cooldowns y resolución automática por tiempo.
 - Confianza de actores, recursos de improvisación y nivel de caos.
 - Cuatro tipos de final y cartel personalizado descargable en SVG.
-- Modo demo para hackathon con reinicio, salto de acto, pausa, simulación de reacciones y snapshot JSON.
+- Modo demo para hackathon con reinicio, salto de escena, pausa, simulación de reacciones y snapshot JSON.
 - 21 pruebas automatizadas del motor, el público y los eventos técnicos.
 
 ### Comprobaciones ejecutadas
@@ -60,13 +61,13 @@ No hace falta configurar variables de entorno.
 
 ## 3. Cómo jugar
 
-1. Pulsa **EMPEZAR LA FUNCIÓN**.
-2. Lee el briefing del acto y pulsa **SUBIR EL TELÓN**. Ahí empiezan los 20 segundos.
-3. Elige **una luz**, **un sonido** y **un objeto** en la cabina técnica.
-4. Pulsa **¡IMPROVISAR!**. La combinación se evalúa y produce una escena, una reacción del público y consecuencias persistentes.
-5. Si aparece una crisis, elige uno de los cuatro protocolos antes de que se agote el tiempo (o deja pasar la crisis).
-6. Continúa al siguiente acto. La obra recuerda género, etiquetas, combinaciones y reacciones.
-7. Tras el acto III, llega el cartel final. Puedes descargarlo en SVG y volver a empezar.
+1. Elige una de las obras y pulsa **EMPEZAR LA FUNCIÓN**. La función arranca directamente.
+2. Tienes **3 minutos** de reloj global. Si la sala se vacía antes, la función termina.
+3. Elige **una luz**, **un sonido** y **un objeto** en la consola inferior.
+4. Al completar la combinación, se ejecuta automáticamente tras **2 segundos**. Cambiar una pieza reinicia la cuenta.
+5. La escena se resuelve con un interludio breve y la siguiente empieza sola.
+6. Si aparece una crisis, elige uno de los cuatro protocolos antes de que se agote el tiempo.
+7. Al llegar a 0:00 o quedarte sin público, aparece el cartel final. Puedes descargarlo en SVG y volver a empezar.
 
 ### Reglas que importan
 
@@ -79,12 +80,12 @@ No hace falta configurar variables de entorno.
 
 ### Atajos y modo demo
 
-Atajos de cabina: `1–3` iluminación, `4–6` sonido, `7–9` objeto y `Enter` para improvisar. En el briefing, `Enter` sube el telón.
+Atajos de cabina: `1–3` iluminación, `4–6` sonido y `7–9` objeto. La combinación se ejecuta sola a los 2 segundos.
 
-El botón **DEMO** de la cabecera abre un panel claramente identificado con:
+El botón **DEMO** abre un panel claramente identificado con:
 
 - Pausar/reanudar el temporizador (también durante una crisis).
-- Saltar al siguiente acto.
+- Saltar a la siguiente escena.
 - Simular una reacción positiva o negativa.
 - Reiniciar la partida.
 - Activar/desactivar sonido.
@@ -184,8 +185,8 @@ Además, **Dejar pasar la crisis** siempre está disponible para evitar cualquie
 
 ### 4.7 Eventos técnicos
 
-- El acto II siempre puede disparar el minijuego del **foco roto**; el acto III
-  puede añadir **cable pelado** o **gallina fugitiva**.
+- La segunda escena siempre puede disparar el minijuego del **foco roto**; las
+  escenas siguientes pueden añadir **cable pelado** o **gallina fugitiva**.
 - Mientras hay una avería, el reloj de escena se pausa y la mesa queda bloqueada.
 - Hay que recoger los objetivos y evitar los señuelos; cada fallo resta tiempo.
 - El resultado mueve confianza, coherencia, caos y la satisfacción de las bandas
@@ -215,20 +216,19 @@ src/
     ControlPanel.jsx          Consola inferior: mezcla de luces, sonido y objetos
     CrisisPanel.jsx           Protocolos inline y modal de crisis
     StageEventOverlay.jsx     Minijuegos técnicos (foco, cable, gallina)
-    SceneInterlude.jsx        Transición narrativa entre escena y resultado
-    IncidentOverlay.jsx       Briefing y resolución narrativa
+    SceneInterlude.jsx        Transición breve entre escena y resultado
     EndingScreen.jsx          Cartel final + export SVG
     DemoPanel.jsx             Herramientas de hackathon
   game/
     initialState.js           Estado inicial y constantes de partida
-    storyData.js              Contenido: controles, actos, reacciones, crisis
+    storyData.js              Contenido: controles, obras, escenas, reacciones, crisis
     narrativeEngine.js        Puntuación de género, coherencia, diálogo, títulos
     audienceModel.js          Personas, criticidad, satisfacción y abandonos
     audienceEngine.js         Reacciones, crisis y protocolos sobre personas
     stageEvents.js            Definición de averías técnicas y sus efectos
     stageEventEngine.js       Estado, temporizador y resolución de averías
     stageChoreography.js      Coreografía visual del escenario
-    gameEngine.js             Resolución de actos, crisis, finales, demo
+    gameEngine.js             Función continua, escenas, crisis, finales, demo
     gameReducer.js            Acciones y transiciones
     audio.js                  Web Audio API, sin assets externos
     utils.js                  Helpers puros
@@ -251,13 +251,13 @@ scripts/
 
 ```text
 title
-  └─ START_GAME → briefing
-        └─ BEGIN_INCIDENT → incident ── TICK 0 ──┐
-              └─ EXECUTE_COMBO → resolution ←────┘
-                    └─ CONTINUE
-                          ├─ crisis pendiente → crisis → USE_ACTION → resolution
-                          ├─ quedan actos → briefing
-                          └─ acto III → ending
+  └─ START_GAME → incident (reloj 3:00)
+        ├─ EXECUTE_COMBO / timeout → resolution (interludio ~2,8 s)
+        │     └─ NEXT_SCENE
+        │           ├─ crisis pendiente → crisis → USE_ACTION → resolution
+        │           ├─ reloj > 0 y público > 0 → siguiente escena
+        │           └─ reloj 0 o público 0 → ending
+        └─ TICK → 0:00 → ending
 ```
 
 Todo el estado vive en `App.jsx` con `useReducer`. No hay estados duplicados en componentes.

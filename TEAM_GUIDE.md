@@ -64,9 +64,11 @@ El estado inicial está en `src/game/initialState.js`. Campos que otros módulos
 
 ```js
 {
-  phase,                 // title | briefing | incident | resolution | crisis | ending
-  incidentIndex,         // 0..2
-  timer, timerMax, timerRunning, nextTimerBonus,
+  phase,                 // title | incident | resolution | crisis | ending
+  playId, sceneOrder, runSeed,
+  incidentIndex, sceneIndex, // escena actual
+  showTimer, showTimerMax,   // reloj global de la función (180 s)
+  timer, timerMax, timerRunning, nextTimerBonus, // reloj de escena
   selections: { lighting, sound, object },
   audience: {
     people: [
@@ -113,19 +115,19 @@ Todas se lanzan con `dispatch({ type, ...payload })`:
 
 | Acción | Payload | Efecto |
 |---|---|---|
-| `START_GAME` | — | Portada → briefing acto I |
-| `BEGIN_INCIDENT` | — | Briefing → incidente, arranca timer |
+| `START_GAME` | `playId?`, `seed?` | Portada → primera escena y reloj de 3 min |
+| `NEXT_SCENE` | — | Tras el interludio: crisis, siguiente escena o final |
 | `SELECT_CONTROL` | `kind`, `id` | Marca/deselecciona un control |
 | `CLEAR_SELECTION` | — | Vacía los tres controles |
 | `EXECUTE_COMBO` | — | Resuelve la combinación (solo con 3/3) |
-| `CONTINUE` | — | Resolución → crisis / siguiente acto / final |
+| `CONTINUE` | — | Alias de `NEXT_SCENE` para compatibilidad |
 | `TICK` | — | Baja timer; a 0 resuelve solo |
 | `USE_ACTION` | `actionId` | Protocolo de crisis o acción preventiva |
 | `DEMO_TOGGLE_PANEL` | — | Abre/cierra demo; al cerrar reanuda |
 | `DEMO_TOGGLE_PAUSE` | — | Pausa/reanuda timer en incidente/crisis |
-| `DEMO_SKIP` | — | Salta de acto sin bloquear |
+| `DEMO_SKIP` | — | Salta de escena sin bloquear |
 | `DEMO_SIMULATE` | `sentiment: 'positive'\|'negative'` | Simula reacción |
-| `DEMO_RESTART` | — | Reinicia y entra directo al acto I |
+| `DEMO_RESTART` | `playId?`, `seed?` | Reinicia y entra directo a la primera escena |
 | `DEMO_STAGE_EVENT` | `eventId?` | Fuerza una avería técnica |
 | `RESTART` | — | Vuelve al cartel inicial |
 | `TOGGLE_SOUND` / `SET_SOUND` | — / `enabled` | Sonido on/off |

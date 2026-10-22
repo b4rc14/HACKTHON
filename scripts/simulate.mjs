@@ -3,10 +3,10 @@
 import { createInitialState } from '../src/game/initialState.js';
 import {
   startShow,
-  beginIncident,
   resolveIncident,
   advanceAfterResolution,
   resolveCrisis,
+  finishShow,
 } from '../src/game/gameEngine.js';
 
 const runs = {
@@ -53,13 +53,13 @@ const runs = {
 };
 
 const play = (choices) => {
-  let state = startShow(createInitialState());
+  let state = startShow(createInitialState(), { playId: 'jardin', seed: 1 });
   const log = [];
-  for (let act = 0; act < 3; act += 1) {
-    state = beginIncident(state);
-    state = resolveIncident(state, choices[act], { timedOut: Boolean(choices[act].timeout) });
+  for (let scene = 0; scene < 6 && state.phase !== 'ending'; scene += 1) {
+    const choice = choices[scene % choices.length];
+    state = resolveIncident(state, choice, { timedOut: Boolean(choice.timeout) });
     log.push({
-      act: act + 1,
+      scene: scene + 1,
       genre: state.result.dominantGenre,
       headline: state.result.headline,
       reaction: state.result.reaction.type,
@@ -70,10 +70,16 @@ const play = (choices) => {
     });
     if (state.pendingCrisis && !state.crisisResolved) {
       state = advanceAfterResolution(state);
-      state = resolveCrisis(state, state.improv > 0 ? 'dialogue' : 'wait');
+      if (state.phase === 'crisis') {
+        state = resolveCrisis(state, state.improv > 0 ? 'dialogue' : 'wait');
+      }
     }
-    state = advanceAfterResolution(state);
+    if (state.phase === 'resolution') {
+      state = { ...state, showTimer: scene === 5 ? 0 : state.showTimer };
+      state = advanceAfterResolution(state);
+    }
   }
+  if (state.phase !== 'ending') state = finishShow(state);
   return { state, log };
 };
 
