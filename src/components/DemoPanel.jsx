@@ -124,20 +124,19 @@ export default function DemoPanel({ state, onClose, onPause, onSkip, onSimulate,
 
       <div className="demo-panel__debug">
         <div className="demo-debug-head">
-          <span>ESTADO ACTUAL</span>
+          <span>ESTADO</span>
           <button type="button" className="text-button text-button--light" onClick={copyState}>
             {copied ? 'copiado' : 'copiar JSON'}
           </button>
         </div>
         <details>
-          <summary>Ver snapshot</summary>
+          <summary>Ver estado</summary>
           <pre>{JSON.stringify(snapshot, null, 2)}</pre>
         </details>
       </div>
 
       <p className="demo-panel__note">
-        Atajos de hackathon. El modo demo no se oculta en la build: sirve para que el jurado
-        y el equipo puedan probar cualquier estado sin esperar.
+        Atajos de demo para probar cualquier estado.
       </p>
     </aside>
   );

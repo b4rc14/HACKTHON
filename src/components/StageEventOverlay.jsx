@@ -2,13 +2,13 @@ import React, { useRef, useState } from 'react';
 import { STAGE_EVENTS, getEventProgress } from '../game/stageEvents.js';
 
 const EFFECT_LABEL = {
-  trust: 'Confianza de actores',
+  trust: 'Confianza',
   coherence: 'Coherencia',
   chaos: 'Caos',
   discontent: 'Descontento',
-  romantics: 'Público tolerante',
-  chaosGroup: 'Público intermedio',
-  critics: 'Público exigente',
+  romantics: 'Tolerantes',
+  chaosGroup: 'Intermedios',
+  critics: 'Exigentes',
 };
 
 const effectChips = (effects = {}) => {
@@ -21,7 +21,7 @@ const effectChips = (effects = {}) => {
   Object.entries(effects.groups || {}).forEach(([key, value]) => {
     if (value !== 0) {
       chips.push({
-        label: key === 'chaos' ? 'Público intermedio' : EFFECT_LABEL[key] || key,
+        label: key === 'chaos' ? 'Intermedios' : EFFECT_LABEL[key] || key,
         value,
       });
     }
@@ -147,21 +147,19 @@ export default function StageEventOverlay({ event, onCollect, onClose }) {
         aria-labelledby="stage-event-title"
       >
         <div className="event-modal__topline">
-          <span className="event-live"><i /> INCIDENCIA TÉCNICA EN DIRECTO</span>
-          <span className="event-scene-pause">Reloj de escena en pausa</span>
+          <span className="event-live"><i /> AVERÍA EN DIRECTO</span>
+          <span className="event-scene-pause">Reloj en pausa</span>
         </div>
 
         <header className="event-modal__header">
           <span className={`event-modal__icon event-modal__icon--${def.tone}`} aria-hidden="true">{def.icon}</span>
           <div>
-            <span className="panel-kicker">EL ESCENARIO SE ROMPE</span>
             <h2 id="stage-event-title">{isResult ? (event.success ? def.successTitle : def.failTitle) : def.title}</h2>
             <p>{isResult ? (event.success ? def.successText : def.failText) : def.subtitle}</p>
           </div>
           {!isResult ? (
             <div className={`event-timer ${event.timer <= 3 ? 'is-urgent' : ''}`}>
               <strong>{event.timer}s</strong>
-              <span>para actuar</span>
             </div>
           ) : (
             <div className={`event-result-stamp ${event.success ? 'is-success' : 'is-failure'}`}>
@@ -181,7 +179,7 @@ export default function StageEventOverlay({ event, onCollect, onClose }) {
                 {def.objective}
               </span>
               <span className="event-progress">
-                <b>{progress.collected}/{progress.total}</b> recuperados
+                <b>{progress.collected}/{progress.total}</b>
               </span>
             </div>
 
@@ -194,7 +192,7 @@ export default function StageEventOverlay({ event, onCollect, onClose }) {
               <div className="event-field__grid" aria-hidden="true" />
               <div className="event-field__floor" aria-hidden="true" />
               {def.id === 'spotlight' ? <div className="event-field__torch" aria-hidden="true" /> : null}
-              <span className="event-field__label">ZONA DE REPARACIÓN · HAZ CLIC O ARRASTRA LOS {def.targetPlural}</span>
+              <span className="event-field__label">RECOGE LOS {def.targetPlural}</span>
               {event.targets.map((target) => {
                 const collected = event.collected.includes(target.id);
                 const isDragging = dragging?.id === target.id;
@@ -256,48 +254,27 @@ export default function StageEventOverlay({ event, onCollect, onClose }) {
             >
               <span className="event-tray__icon" aria-hidden="true">⌑</span>
               <span>
-                <b>{def.dropLabel || 'BANDEJA DE REPARACIÓN'}</b>
-                <small>{progress.collected}/{progress.total} asegurados</small>
+                <b>{def.dropLabel || 'BANDEJA'}</b>
+                <small>{progress.collected}/{progress.total}</small>
               </span>
-              <span className="event-tray__hint">SUELTA AQUÍ</span>
             </div>
 
             <div className="event-drag-help">
-              <span>{def.id === 'spotlight' ? 'Arrastra cada cristal hasta la bandeja.' : 'Arrastra cada objetivo a la zona de recogida.'}</span>
-              <span>Los señuelos restan 2 segundos.</span>
+              <span>Clic o arrastra. Los señuelos restan 2 s.</span>
             </div>
-
-            <footer className="event-modal__footer">
-              <span>
-                {def.id === 'spotlight'
-                  ? 'Los tornillos no sirven para arreglar la luz. Cada error resta 2 segundos.'
-                  : def.id === 'cable'
-                    ? 'El fusible rojo está fundido. No lo toques.'
-                    : 'La gallina se mueve. El público también.'}
-              </span>
-              <span className="event-feedback-hint">Selecciona con el ratón o el dedo.</span>
-            </footer>
           </>
         ) : (
           <>
             <div className="event-result-grid">
               <div className="event-result-detail">
-                <span className="panel-kicker">PARTE DE INCIDENCIAS</span>
-                <p>
-                  {event.id === 'spotlight'
-                    ? 'El foco vuelve a iluminar el escenario.'
-                    : event.id === 'cable'
-                      ? 'El cuadro eléctrico se estabiliza.'
-                      : 'La gallina vuelve a su marca, más o menos.'}
-                </p>
+                <span className="panel-kicker">RESULTADO</span>
                 <div className="event-result-stats">
-                  <span>Cristales/objetivos: <b>{progress.collected}/{progress.total}</b></span>
+                  <span>Recogidos: <b>{progress.collected}/{progress.total}</b></span>
                   <span>Errores: <b>{event.decoyHits || 0}</b></span>
-                  <span>Acto: <b>{event.act}</b></span>
                 </div>
               </div>
               <div className="event-result-effects">
-                <span className="panel-kicker">CONSECUENCIAS</span>
+                <span className="panel-kicker">EFECTOS</span>
                 <div>
                   {effects.map((effect) => (
                     <span key={effect.label} className={effect.value > 0 ? 'is-positive' : 'is-negative'}>
@@ -308,20 +285,8 @@ export default function StageEventOverlay({ event, onCollect, onClose }) {
               </div>
             </div>
 
-            {event.success ? (
-              <div className="event-result-note">
-                La función recupera el control. Los actores respiran y el público vuelve a mirar al escenario.
-              </div>
-            ) : (
-              <div className="event-result-note event-result-note--bad">
-                El desastre queda a la vista. La obra continúa, pero el escenario ya no es el mismo.
-              </div>
-            )}
-
             <footer className="event-modal__footer event-modal__footer--result">
-              <span>El tiempo de la escena sigue congelado hasta que vuelvas.</span>
               <button type="button" className="primary-button" onClick={onClose}>
-                <span className="primary-button__small">RECUPERAR EL CONTROL</span>
                 <span className="primary-button__big">VOLVER A LA ESCENA</span>
               </button>
             </footer>

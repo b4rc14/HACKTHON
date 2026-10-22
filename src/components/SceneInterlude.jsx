@@ -12,17 +12,16 @@ export default function SceneInterlude({ incident, sceneNumber, result, onSkip }
     >
       <span className="scene-interlude__line" aria-hidden="true" />
       <div className="scene-interlude__tag">
-        <span aria-hidden="true">{genre.icon}</span> EN ESCENA · ESCENA {sceneNumber || 1}
+        <span aria-hidden="true">{genre.icon}</span> ESCENA {sceneNumber || 1}
       </div>
       <div className="scene-interlude__copy">
         <strong>{result.headline}</strong>
-        <span>{result.timedOut ? 'Los actores improvisan contra el reloj.' : 'La historia se está escribiendo delante del público.'}</span>
       </div>
       <span className="scene-interlude__reaction">
         {result.reaction.icon} {result.reaction.label}
       </span>
       <button type="button" className="text-button text-button--light" onClick={onSkip}>
-        ver resultado
+continuar
       </button>
       <span className="scene-interlude__progress" aria-hidden="true"><i /></span>
     </aside>
