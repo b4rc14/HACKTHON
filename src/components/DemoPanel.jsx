@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { getAudienceStats } from '../game/audienceModel.js';
 
-export default function DemoPanel({ state, onClose, onPause, onSkip, onSimulate, onRestart, onToggleSound }) {
+export default function DemoPanel({ state, onClose, onPause, onSkip, onSimulate, onRestart, onToggleSound, onForceStageEvent }) {
   const [copied, setCopied] = useState(false);
   const snapshot = useMemo(() => {
     const stats = getAudienceStats(state.audience);
@@ -40,6 +40,19 @@ export default function DemoPanel({ state, onClose, onPause, onSkip, onSimulate,
         })),
       },
       actors: state.actors,
+      desk: state.desk,
+      stage: {
+        activeEvent: state.stage?.activeEvent
+          ? {
+              id: state.stage.activeEvent.id,
+              phase: state.stage.activeEvent.phase,
+              timer: state.stage.activeEvent.timer,
+              collected: state.stage.activeEvent.collected,
+            }
+          : null,
+        eventHistory: state.stage?.eventHistory || [],
+        persistentFx: state.stage?.persistentFx,
+      },
       chaos: Math.round(state.chaos),
       improv: state.improv,
       cooldowns: state.cooldowns,
@@ -89,6 +102,14 @@ export default function DemoPanel({ state, onClose, onPause, onSkip, onSimulate,
         </button>
         <button type="button" onClick={() => onSimulate('negative')} disabled={['title', 'ending'].includes(state.phase)}>
           🍅 Reacción −
+        </button>
+        <button
+          type="button"
+          onClick={onForceStageEvent}
+          disabled={state.phase !== 'incident' || Boolean(state.stage?.activeEvent)}
+          title="Fuerza el minijuego del foco roto"
+        >
+          🎬 Forzar foco roto
         </button>
         <button type="button" onClick={onToggleSound}>
           {state.soundEnabled ? '🔊 Sonido ON' : '🔇 Sonido OFF'}

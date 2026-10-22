@@ -1,5 +1,6 @@
-import React from 'react';
-import { GENRES } from '../game/storyData.js';
+import React, { useEffect, useRef, useState } from 'react';
+import { GENRES, getControlDef } from '../game/storyData.js';
+import { getStagePerformance } from '../game/stageChoreography.js';
 
 const LIGHT_COLORS = {
   warm: '#ffc46b',
@@ -358,10 +359,25 @@ export default function StageView({
   timer,
   timerMax,
   crisis,
+  stage,
+  lightIntensity = 76,
+  lightMix = {},
+  primaryLight = null,
 }) {
-  const lightingId = selections?.lighting;
+  const lightingId = primaryLight || selections?.lighting;
   const lightColor = LIGHT_COLORS[lightingId] || GENRE_LIGHT[genre] || GENRE_LIGHT.romance;
-  const blackout = incident?.id === 'blackout' && phase === 'incident' && !lightingId;
+  const lightPower = 0.2 + (Math.max(0, Math.min(100, lightIntensity)) / 100) * 0.8;
+  const activeLights = Object.keys(LIGHT_COLORS)
+    .filter((id) => (Number(lightMix?.[id]) || 0) > 0)
+    .map((id) => ({ id, level: Math.max(0, Math.min(100, Number(lightMix[id]))) }));
+  const activeEvent = stage?.activeEvent;
+  const brokenLight =
+    Boolean(stage?.persistentFx?.brokenLight) || activeEvent?.id === 'spotlight';
+  const sparks = Boolean(stage?.persistentFx?.sparks) || activeEvent?.id === 'cable';
+  const looseChicken =
+    Boolean(stage?.persistentFx?.looseChicken) || activeEvent?.id === 'chicken';
+  const blackout =
+    (incident?.id === 'blackout' && phase === 'incident' && !lightingId) || brokenLight;
   const lines =
     phase === 'resolution' || phase === 'crisis'
       ? result?.dialogue || incident?.openingLines || []
@@ -379,8 +395,61 @@ export default function StageView({
 
   const dinosaurVisible = incidentIndex >= 1;
   const selectedObject = selections?.object;
+  const selectedSound = getControlDef('sound', selections?.sound);
   const showCurtainsClosed = phase === 'briefing' || phase === 'crisis';
   const timerPercent = timerMax ? Math.max(0, Math.min(100, (timer / timerMax) * 100)) : 0;
+  const performance = getStagePerformance({
+    phase,
+    incident,
+    genre,
+    result,
+    lastReaction,
+    crisis,
+  });
+  const [performanceBeat, setPerformanceBeat] = useState('idle');
+  const sceneRef = useRef(null);
+  const shake =
+    lastReaction?.type === 'tomatoes' ||
+    lastReaction?.type === 'protest' ||
+    (incident?.id === 'explosion' && phase === 'resolution');
+
+  useEffect(() => {
+    if (phase === 'resolution') {
+      setPerformanceBeat('impact');
+      const reactionTimer = window.setTimeout(() => setPerformanceBeat('react'), 460);
+      const settleTimer = window.setTimeout(() => setPerformanceBeat('settle'), 1900);
+      return () => {
+        window.clearTimeout(reactionTimer);
+        window.clearTimeout(settleTimer);
+      };
+    }
+    if (phase === 'incident') {
+      setPerformanceBeat('live');
+      return undefined;
+    }
+    if (phase === 'crisis') {
+      setPerformanceBeat('tense');
+      return undefined;
+    }
+    setPerformanceBeat('idle');
+    return undefined;
+  }, [phase, result?.comboSignature, lastReaction?.id, incident?.id]);
+
+  const handleParallax = (event) => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    const rect = scene.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    const y = ((event.clientY - rect.top) / rect.height) * 2 - 1;
+    scene.style.setProperty('--parallax-x', x.toFixed(3));
+    scene.style.setProperty('--parallax-y', y.toFixed(3));
+  };
+
+  const resetParallax = () => {
+    if (!sceneRef.current) return;
+    sceneRef.current.style.setProperty('--parallax-x', '0');
+    sceneRef.current.style.setProperty('--parallax-y', '0');
+  };
 
   return (
     <section
@@ -388,7 +457,14 @@ export default function StageView({
         'stage-shell',
         `stage-shell--${genre}`,
         `stage-shell--${phase}`,
+        `performance--${performanceBeat}`,
+        `camera--${performance.camera}`,
         blackout ? 'is-blackout' : '',
+        brokenLight ? 'has-broken-light' : '',
+        sparks ? 'has-cable-sparks' : '',
+        looseChicken ? 'has-loose-chicken' : '',
+        activeEvent ? 'has-stage-event' : '',
+        shake ? 'is-shaking' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -404,28 +480,64 @@ export default function StageView({
         </span>
       </div>
 
-      <div className="stage-scene">
+      <div
+        className="stage-scene"
+        ref={sceneRef}
+        onPointerMove={handleParallax}
+        onPointerLeave={resetParallax}
+      >
         <SetPiece genre={genre} />
 
-        <div className={`stage-light stage-light--${lightingId || genre}`} aria-hidden="true">
-          <span className="stage-light__beam stage-light__beam--one" />
-          <span className="stage-light__beam stage-light__beam--two" />
-          <span className="stage-light__beam stage-light__beam--three" />
+        <div className="stage-depth" aria-hidden="true" />
+        <div className="stage-rig" aria-hidden="true">
+          <span className="rig-pipe" />
+          <span className={`rig-lamp rig-lamp--one ${brokenLight ? 'is-broken' : ''}`}><i /></span>
+          <span className="rig-lamp rig-lamp--two"><i /></span>
+          <span className="rig-lamp rig-lamp--three"><i /></span>
+          {brokenLight ? <span className="rig-broken-flicker" /> : null}
         </div>
+
+        {activeLights.length ? (
+          activeLights.map(({ id, level }) => (
+            <div
+              key={id}
+              className={`stage-light stage-light--${id} is-mixed`}
+              style={{
+                '--stage-light': LIGHT_COLORS[id],
+                opacity: 0.15 + (level / 100) * 0.7,
+              }}
+              aria-hidden="true"
+            >
+              <span className="stage-light__beam stage-light__beam--one" />
+              <span className="stage-light__beam stage-light__beam--two" />
+              <span className="stage-light__beam stage-light__beam--three" />
+            </div>
+          ))
+        ) : (
+          <div
+            className={`stage-light stage-light--${lightingId || genre}`}
+            style={{ opacity: lightPower }}
+            aria-hidden="true"
+          >
+            <span className="stage-light__beam stage-light__beam--one" />
+            <span className="stage-light__beam stage-light__beam--two" />
+            <span className="stage-light__beam stage-light__beam--three" />
+          </div>
+        )}
 
         <div className={`genre-decor genre-decor--${genre}`} aria-hidden="true">
           {genre === 'romance'
-            ? ['♥', '♥', '♥', '♥'].map((symbol, index) => (
+            ? ['♥', '♥', '♥', '♥', '❀'].map((symbol, index) => (
                 <span key={index} style={{ '--i': index }}>{symbol}</span>
               ))
             : null}
           {genre === 'comedy'
-            ? ['✶', '✦', '✶', '✦'].map((symbol, index) => (
+            ? ['✶', '✦', '✶', '✦', '●'].map((symbol, index) => (
                 <span key={index} style={{ '--i': index }}>{symbol}</span>
               ))
             : null}
           {genre === 'scifi'
-            ? ['◉', '◌', '◉', '✦'].map((symbol, index) => (
+            ? ['◉', '◌', '◉', '✦', '·'].map((symbol, index) => (
                 <span key={index} style={{ '--i': index }}>{symbol}</span>
               ))
             : null}
@@ -438,22 +550,93 @@ export default function StageView({
           <span className="curtain__fringe" />
         </div>
         <div className="valance" aria-hidden="true" />
+        <div className="proscenium" aria-hidden="true">
+          <span className="proscenium__top" />
+          <span className="proscenium__left" />
+          <span className="proscenium__right" />
+          <span className="proscenium__crest">✶</span>
+        </div>
+
+        <div className="dust-field" aria-hidden="true">
+          {Array.from({ length: 11 }, (_, index) => (
+            <span key={index} style={{ '--dust': index }} />
+          ))}
+        </div>
+
+        {performance.fx.includes('portal') ? (
+          <div className="story-fx story-fx--portal" aria-hidden="true">
+            <span /><span /><span />
+          </div>
+        ) : null}
+        {performance.fx.includes('petals') ? (
+          <div className="story-fx story-fx--petals" aria-hidden="true">
+            {Array.from({ length: 10 }, (_, index) => (
+              <span key={index} style={{ '--i': index }}>♥</span>
+            ))}
+          </div>
+        ) : null}
+        {performance.fx.includes('confetti') ? (
+          <div className="story-fx story-fx--confetti" aria-hidden="true">
+            {Array.from({ length: 14 }, (_, index) => (
+              <span key={index} style={{ '--i': index }}>✦</span>
+            ))}
+          </div>
+        ) : null}
+        {performance.fx.includes('dinosaur-shadow') ? (
+          <div className="story-fx story-fx--dino-shadow" aria-hidden="true" />
+        ) : null}
+        {performance.fx.includes('phone-lights') ? (
+          <div className="story-fx story-fx--phones" aria-hidden="true">
+            {Array.from({ length: 7 }, (_, index) => (
+              <span key={index} style={{ '--i': index }} />
+            ))}
+          </div>
+        ) : null}
 
         {dinosaurVisible ? <DinosaurProp faded={incidentIndex === 2} /> : null}
         {selectedObject ? <PropArt type={selectedObject} /> : null}
+        {selectedSound ? (
+          <div className={`stage-sound-cue stage-sound-cue--${selectedSound.id}`} aria-label={`Sonido: ${selectedSound.label}`}>
+            <span className="stage-sound-cue__notes" aria-hidden="true">♫</span>
+            <span className="stage-sound-cue__bars" aria-hidden="true"><i /><i /><i /><i /></span>
+            <span className="stage-sound-cue__label">{selectedSound.label}</span>
+          </div>
+        ) : null}
 
-        <div className={`actors ${showCurtainsClosed ? 'actors--peek' : ''}`}>
+        <div className={`actors actors--${performance.action} ${showCurtainsClosed ? 'actors--peek' : ''}`}>
           <ActorFigure who="lia" mood={actorMood} speaking={activeSpeaker === 'LÍA'} />
           <ActorFigure who="bruno" mood={actorMood} speaking={activeSpeaker === 'BRUNO'} />
         </div>
 
         <ReactionFx reaction={lastReaction} incident={incident} />
+        {incident?.id === 'explosion' && ['incident', 'resolution'].includes(phase) ? (
+          <div className="fallen-debris" aria-hidden="true">
+            <span className="fallen-beam" />
+            <span className="debris debris--one" />
+            <span className="debris debris--two" />
+            <span className="debris debris--three" />
+          </div>
+        ) : null}
+
+        {looseChicken && activeEvent?.id === 'chicken' ? (
+          <span className="prop prop--chicken prop--chicken-loose" aria-hidden="true">🐔</span>
+        ) : null}
+        {sparks ? (
+          <div className="cable-sparks" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+        ) : null}
 
         {blackout ? (
           <div className="blackout-layer" aria-hidden="true">
-            <span className="blackout-layer__line">SIN LUZ · EL PÚBLICO CONTIENE LA RESPIRACIÓN</span>
+            <span className="blackout-layer__line">
+              {brokenLight ? 'FOCO ROTO · EL TELAR ECHA CHISPAS' : 'SIN LUZ · EL PÚBLICO CONTIENE LA RESPIRACIÓN'}
+            </span>
           </div>
         ) : null}
+
 
         {phase === 'incident' ? (
           <div className="incident-ribbon">

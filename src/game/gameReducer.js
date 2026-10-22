@@ -12,6 +12,14 @@ import {
   tickGame,
   useSpecialAction,
 } from './gameEngine.js';
+import {
+  clearStageEventForSkip,
+  closeStageEvent,
+  collectStageTarget,
+  maybeStartStageEvent,
+  startStageEvent,
+  tickStageEvent,
+} from './stageEventEngine.js';
 
 const withSound = (state, enabled) => ({
   ...state,
@@ -34,6 +42,8 @@ const restartWithPreferences = (state) => {
   };
 };
 
+const stageEventBlocksControls = (state) => Boolean(state.stage?.activeEvent);
+
 export const gameReducer = (state, action) => {
   switch (action.type) {
     case 'START_GAME':
@@ -47,10 +57,10 @@ export const gameReducer = (state, action) => {
 
     case 'BEGIN_INCIDENT':
       if (state.phase !== 'briefing') return state;
-      return beginIncident(state);
+      return maybeStartStageEvent(beginIncident(state));
 
     case 'SELECT_CONTROL': {
-      if (state.phase !== 'incident') return state;
+      if (state.phase !== 'incident' || stageEventBlocksControls(state)) return state;
       const { kind, id } = action;
       if (!['lighting', 'sound', 'object'].includes(kind)) return state;
       const current = state.selections[kind];
@@ -64,14 +74,18 @@ export const gameReducer = (state, action) => {
     }
 
     case 'CLEAR_SELECTION':
-      if (state.phase !== 'incident') return state;
+      if (state.phase !== 'incident' || stageEventBlocksControls(state)) return state;
       return {
         ...state,
         selections: { lighting: null, sound: null, object: null },
       };
 
     case 'EXECUTE_COMBO': {
-      if (state.phase !== 'incident' || !selectionIsComplete(state.selections)) {
+      if (
+        state.phase !== 'incident' ||
+        stageEventBlocksControls(state) ||
+        !selectionIsComplete(state.selections)
+      ) {
         return state;
       }
       return resolveIncident(state, state.selections);
@@ -82,9 +96,11 @@ export const gameReducer = (state, action) => {
       return advanceAfterResolution(state);
 
     case 'TICK':
+      if (stageEventBlocksControls(state)) return state;
       return tickGame(state);
 
     case 'USE_ACTION': {
+      if (stageEventBlocksControls(state)) return state;
       if (state.phase === 'crisis') {
         return resolveCrisis(state, action.actionId);
       }
@@ -92,6 +108,20 @@ export const gameReducer = (state, action) => {
         return useSpecialAction(state, action.actionId);
       }
       return state;
+    }
+
+    case 'STAGE_EVENT_TICK':
+      return tickStageEvent(state);
+
+    case 'STAGE_EVENT_COLLECT':
+      return collectStageTarget(state, action.targetId);
+
+    case 'STAGE_EVENT_CLOSE':
+      return closeStageEvent(state);
+
+    case 'DEMO_STAGE_EVENT': {
+      if (state.phase !== 'incident' || stageEventBlocksControls(state)) return state;
+      return startStageEvent(state, action.eventId || 'spotlight');
     }
 
     case 'DEMO_TOGGLE_PANEL': {
@@ -114,8 +144,10 @@ export const gameReducer = (state, action) => {
       };
     }
 
-    case 'DEMO_SKIP':
-      return demoSkip(state);
+    case 'DEMO_SKIP': {
+      const next = demoSkip(state);
+      return clearStageEventForSkip(next);
+    }
 
     case 'DEMO_SIMULATE':
       return simulateReaction(state, action.sentiment);
@@ -127,6 +159,18 @@ export const gameReducer = (state, action) => {
 
     case 'SET_SOUND':
       return withSound(state, Boolean(action.enabled));
+
+    case 'SET_INTENSITY': {
+      if (!['light', 'sound'].includes(action.kind)) return state;
+      const value = Math.max(0, Math.min(100, Number(action.value) || 0));
+      return {
+        ...state,
+        desk: {
+          ...state.desk,
+          [`${action.kind}Intensity`]: value,
+        },
+      };
+    }
 
     case 'PERSON_GONE':
       return personGone(state, action.personId);

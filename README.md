@@ -21,13 +21,13 @@ El juego **se puede jugar completo**:
 - Confianza de actores, recursos de improvisación y nivel de caos.
 - Cuatro tipos de final y cartel personalizado descargable en SVG.
 - Modo demo para hackathon con reinicio, salto de acto, pausa, simulación de reacciones y snapshot JSON.
-- 14 pruebas automatizadas del motor y del modelo de público.
+- 21 pruebas automatizadas del motor, el público y los eventos técnicos.
 
 ### Comprobaciones ejecutadas
 
 ```bash
 npm install
-npm test       # 14 tests pasan
+npm test       # 21 tests pasan
 npm run build  # build de producción correcto
 ```
 
@@ -182,6 +182,23 @@ Además, **Dejar pasar la crisis** siempre está disponible para evitar cualquie
   - **CAOS MEMORABLE**: comedia/absurdo con caos alto y público todavía dentro.
   - **FRACASO**: la historia o la sala se rompen.
 
+### 4.7 Eventos técnicos
+
+- El acto II siempre puede disparar el minijuego del **foco roto**; el acto III
+  puede añadir **cable pelado** o **gallina fugitiva**.
+- Mientras hay una avería, el reloj de escena se pausa y la mesa queda bloqueada.
+- Hay que recoger los objetivos y evitar los señuelos; cada fallo resta tiempo.
+- El resultado mueve confianza, coherencia, caos y la satisfacción de las bandas
+  de criticidad del público.
+
+### 4.8 Consola inferior
+
+- Tres faders de iluminación mezclables; la luz principal es la que puntúa.
+- Teclas de sonido y objeto; volumen master y volumen de efectos.
+- Al completar luz + sonido + objeto, el combo se ejecuta automáticamente tras
+  **2 segundos**. Cambiar una elección durante ese margen reinicia la cuenta.
+- La consola incluye el acceso a los protocolos de crisis y el monitor de sala.
+
 ---
 
 ## 5. Estructura
@@ -192,11 +209,13 @@ src/
   main.jsx
   components/
     TitleScreen.jsx           Portada
-    StageView.jsx             Escenario SVG, actores, atrezo, incidentes
+    StageView.jsx             Escenario 2.5D, actores, atrezo y eventos técnicos
     AudienceTheater.jsx       Platea de 60 personas, colores y salida animada
-    DeskPanel.jsx             Monitor de cabina + canales de luz, sonido y objeto
+    ControlPanel.jsx          Consola inferior: mezcla de luces, sonido y objetos
+    ShowStatusBar.jsx         Monitor de calidad, coherencia y público
     CrisisPanel.jsx           Protocolos inline y modal de crisis
-    HistoryPanel.jsx          Cuaderno de dirección / memoria
+    StageEventOverlay.jsx     Minijuegos técnicos (foco, cable, gallina)
+    SceneInterlude.jsx        Transición narrativa entre escena y resultado
     IncidentOverlay.jsx       Briefing y resolución narrativa
     EndingScreen.jsx          Cartel final + export SVG
     DemoPanel.jsx             Herramientas de hackathon
@@ -206,18 +225,24 @@ src/
     narrativeEngine.js        Puntuación de género, coherencia, diálogo, títulos
     audienceModel.js          Personas, criticidad, satisfacción y abandonos
     audienceEngine.js         Reacciones, crisis y protocolos sobre personas
+    stageEvents.js            Definición de averías técnicas y sus efectos
+    stageEventEngine.js       Estado, temporizador y resolución de averías
+    stageChoreography.js      Coreografía visual del escenario
     gameEngine.js             Resolución de actos, crisis, finales, demo
     gameReducer.js            Acciones y transiciones
     audio.js                  Web Audio API, sin assets externos
     utils.js                  Helpers puros
     gameEngine.test.js        Tests del motor
+    audienceModel.test.js     Tests del público por personas
+    stageEventEngine.test.js  Tests de los minijuegos técnicos
   styles/
     global.css                Layout, portada, modales, estado, final
-    stage.css                 Escenario, actores, SVG, animaciones
+    stage.css                 Escenario 2.5D, actores, SVG, animaciones
+    stage-events.css          Overlays y minijuegos de averías
     audience.css              Platea, butacas, salidas y animación de abandono
-    desk.css                  Mesa del técnico, monitor y canales
+    controls.css              Consola inferior de cabina
+    integration.css           Monitor de sala y composición del desk
     layout.css                Composición vertical escenario / platea / mesa
-    controls.css              Botones y crisis
 scripts/
   simulate.mjs                Simulador de balance
 ```

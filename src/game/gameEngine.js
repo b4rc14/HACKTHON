@@ -42,9 +42,9 @@ const cueForReaction = (reaction, dominantGenre) => {
   if (reaction.type === 'ovation' || reaction.type === 'flowers') return 'ovation';
   if (reaction.type === 'applause' || reaction.type === 'laughs') return 'applause';
   if (reaction.type === 'tomatoes') return 'tomato';
-  if (reaction.type === 'boo' || reaction.type === 'walkout' || reaction.type === 'protest') {
-    return 'boo';
-  }
+  if (reaction.type === 'walkout') return 'walkout';
+  if (reaction.type === 'protest') return 'protest';
+  if (reaction.type === 'boo') return 'boo';
   return `theme-${dominantGenre}`;
 };
 
@@ -525,6 +525,7 @@ export const computeEnding = (state) => {
     `Confianza ${Math.round(trust)}`,
     `Caos ${Math.round(state.chaos)}`,
     `${state.stats.crises} crisis`,
+    `${state.stage?.eventHistory?.length || 0} avería(s)`,
   ];
 
   return {

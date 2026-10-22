@@ -16,7 +16,7 @@ Guía para trabajar en paralelo después del MVP. La regla principal:
 | Público y crisis | `src/game/audienceEngine.js`, tests de motor | Sistemas / balance | Deltas, umbrales, reacciones, protocolos |
 | Orquestación | `src/game/gameEngine.js`, `gameReducer.js` | Arquitectura / QA | Flujo de actos, finales, demo |
 | Escenario y arte | `src/components/StageView.jsx`, `AudienceTheater.jsx`, `audience.css`, `stage.css` | Arte / frontend | SVG, animaciones, props visuales |
-| Cabina y UI | `DeskPanel.jsx`, `CrisisPanel.jsx`, `HistoryPanel.jsx`, `desk.css`, `layout.css` | UI / frontend | Layout, estilos, accesibilidad |
+| Cabina y UI | `ControlPanel.jsx`, `ShowStatusBar.jsx`, `CrisisPanel.jsx`, `controls.css`, `integration.css`, `layout.css` | UI / frontend | Layout, estilos, accesibilidad |
 | Pantallas | `TitleScreen.jsx`, `EndingScreen.jsx`, `global.css` | UI / presentación | Portada, cartel, export SVG |
 | Demo/QA | `DemoPanel.jsx`, `scripts/simulate.mjs`, tests | QA | Herramientas de prueba |
 | Documentación | `README.md`, `TEAM_GUIDE.md` | Cualquiera | Mantener contratos al día |
@@ -91,6 +91,12 @@ El estado inicial está en `src/game/initialState.js`. Campos que otros módulos
     title
   },
   actors: { trust, glitches, status, lastLine },
+  desk: { lightIntensity, soundIntensity },
+  stage: {
+    activeEvent,           // avería activa o null
+    eventHistory, lastEventResult, lastFeedback,
+    persistentFx: { brokenLight, sparks, looseChicken }
+  },
   chaos, improv,
   cooldowns: { dialogue, pacing, engage, curtain },
   result,                // evaluación del último acto
@@ -120,8 +126,12 @@ Todas se lanzan con `dispatch({ type, ...payload })`:
 | `DEMO_SKIP` | — | Salta de acto sin bloquear |
 | `DEMO_SIMULATE` | `sentiment: 'positive'\|'negative'` | Simula reacción |
 | `DEMO_RESTART` | — | Reinicia y entra directo al acto I |
+| `DEMO_STAGE_EVENT` | `eventId?` | Fuerza una avería técnica |
 | `RESTART` | — | Vuelve al cartel inicial |
 | `TOGGLE_SOUND` / `SET_SOUND` | — / `enabled` | Sonido on/off |
+| `SET_INTENSITY` | `kind: 'light'\|'sound'`, `value` | Ajusta la intensidad de escena |
+| `PERSON_GONE` | `personId` | Confirma que la animación de salida terminó |
+| `STAGE_EVENT_TICK` / `STAGE_EVENT_COLLECT` / `STAGE_EVENT_CLOSE` | — / `targetId` / — | Avance, recogida y cierre de minijuegos |
 
 ---
 
@@ -150,22 +160,33 @@ Todas se lanzan con `dispatch({ type, ...payload })`:
 
 No debe llamar a dispatch. Para añadir arte, usad `selections`, `incident.id`, `result.dominantGenre`, `lastReaction.type` y las clases de fase.
 
-### `DeskControls`
+### `ControlPanel`
 
 ```jsx
-<DeskControls
-  selections={...}
+<ControlPanel
+  selections={selections}
   onSelect={(kind, id) => ...}
   onPreview={(kind, control) => ...}
-  onExecute={() => ...}
+  onLightLevel={(id, value) => ...}
   onClear={() => ...}
-  active={phase === 'incident'}
+  active={phase === 'incident' && !stage.activeEvent}
   phase={phase}
   timer={timer}
-/>
+  timerMax={timerMax}
+  graceMs={2000}
+  lightMix={lightMix}
+  primaryLight={primaryLight}
+  masterVolume={masterVolume}
+  onMasterVolume={...}
+  fxVolume={fxVolume}
+  onFxVolume={...}
+>
+  <CrisisPanel ... />
+</ControlPanel>
 ```
 
-`CONTROLS` y `CONTROL_GROUPS` salen de `storyData.js`. Si añadís un control, añadid también su estilo de color y comprobad la inclinación.
+`CONTROLS` sale de `storyData.js`. La consola mezcla luces y auto-ejecuta el
+combo tras `graceMs`; no hay botón de improvisar.
 
 ### `AudienceTheater`
 
@@ -267,7 +288,7 @@ En `CONTROLS`:
 }
 ```
 
-No hace falta tocar React: `DeskControls` recorre los arrays. Revisad que los textos quepan en la tarjeta.
+No hace falta tocar React: `ControlPanel` recorre los arrays. Revisad que los textos quepan en la tarjeta.
 
 ---
 
@@ -326,7 +347,7 @@ Sugerencia para 5 personas:
 1. **Narrativa** trabaja en `storyData.js` y textos de `narrativeEngine` (sin tocar el resto del motor).
 2. **Balance** trabaja en `audienceEngine.js` + tests + `scripts/simulate.mjs`.
 3. **Arte/escenario** trabaja en `StageView.jsx`, `AudienceTheater.jsx`, `stage.css` y `audience.css`.
-4. **UI/cabina** trabaja en `DeskPanel.jsx`, `CrisisPanel.jsx`, `HistoryPanel.jsx`, `desk.css` y `layout.css`.
+4. **UI/cabina** trabaja en `ControlPanel.jsx`, `ShowStatusBar.jsx`, `CrisisPanel.jsx`, `controls.css`, `integration.css` y `layout.css`.
 5. **QA/orquestación** toca `gameEngine.js`, `gameReducer.js`, `DemoPanel.jsx`, `README`/`TEAM_GUIDE`.
 
 Para evitar choques:
@@ -345,7 +366,7 @@ Todas parten del mismo commit de `main`:
 | `feature/narrativa-contenido` | Nuevos actos, objetos, diálogos, títulos y callbacks | `storyData.js`, textos de `narrativeEngine.js`, `IncidentOverlay.jsx`, `EndingScreen.jsx` |
 | `feature/publico-balance` | Satisfacción, reacciones, crisis, dificultad y finales | `audienceEngine.js`, `gameEngine.js`, `scripts/simulate.mjs`, tests |
 | `feature/escenario-animacion` | SVGs, personajes, props, luces y animaciones | `StageView.jsx`, `AudienceTheater.jsx`, `stage.css`, `audience.css` |
-| `feature/ui-cabina` | Cabina, paneles, historial, accesibilidad y estilos | `DeskPanel.jsx`, `CrisisPanel.jsx`, `HistoryPanel.jsx`, `desk.css`, `layout.css` |
+| `feature/ui-cabina` | Cabina, monitores, accesibilidad y estilos | `ControlPanel.jsx`, `ShowStatusBar.jsx`, `CrisisPanel.jsx`, `controls.css`, `integration.css` |
 
 Crear una rama nueva a partir de `main`:
 
@@ -378,8 +399,9 @@ git push -u origin feature/narrativa-contenido
 - [ ] `npm run build` pasa.
 - [ ] `npm test` pasa.
 - [ ] Se puede jugar una partida completa sin pantallas muertas.
-- [ ] El timer de 20 s resuelve solo al llegar a 0.
+- [ ] El timer de 20 s resuelve solo al llegar a 0 y se pausa durante una avería.
 - [ ] Una crisis se puede resolver o dejar pasar.
+- [ ] Los minijuegos de foco, cable y gallina se pueden completar o fallar.
 - [ ] El botón Reiniciar vuelve a un estado inicial limpio.
 - [ ] No hay imágenes externas obligatorias.
 - [ ] La nueva funcionalidad está documentada en README/TEAM_GUIDE.
@@ -399,6 +421,10 @@ git push -u origin feature/narrativa-contenido
 7. Cuatro finales distintos alcanzables.
 8. Simulación positiva/negativa de demo.
 9. Salto de demo sin fases huérfanas.
+
+`src/game/audienceModel.test.js` cubre el público por personas y
+`src/game/stageEventEngine.test.js` cubre los minijuegos del escenario. En total
+son **21 tests**.
 
 Los tests son de motor puro (Node). Si añadís tests de componentes, usad `@testing-library/react` y jsdom, pero mantened el núcleo sin dependencias de React.
 

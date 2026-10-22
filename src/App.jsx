@@ -1,19 +1,31 @@
-import React, { useCallback, useEffect, useMemo, useReducer } from 'react';
+import React, { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import TitleScreen from './components/TitleScreen.jsx';
 import StageView from './components/StageView.jsx';
 import AudienceTheater from './components/AudienceTheater.jsx';
-import { DeskControls, DeskMonitor } from './components/DeskPanel.jsx';
+import ControlPanel from './components/ControlPanel.jsx';
+import ShowStatusBar from './components/ShowStatusBar.jsx';
 import CrisisPanel from './components/CrisisPanel.jsx';
 import IncidentOverlay from './components/IncidentOverlay.jsx';
 import EndingScreen from './components/EndingScreen.jsx';
 import DemoPanel from './components/DemoPanel.jsx';
+import StageEventOverlay from './components/StageEventOverlay.jsx';
+import SceneInterlude from './components/SceneInterlude.jsx';
 import { createInitialState } from './game/initialState.js';
 import { gameReducer } from './game/gameReducer.js';
 import { INCIDENTS, GENRES, CONTROLS } from './game/storyData.js';
 import { getAudienceStats } from './game/audienceEngine.js';
 import { getTimerPercent } from './game/gameEngine.js';
 import { selectionIsComplete } from './game/narrativeEngine.js';
-import { playCue, previewControl, setMuted } from './game/audio.js';
+import {
+  playCue,
+  previewControl,
+  setCrowdLevel,
+  setFxVolume,
+  setMuted,
+  setVolume,
+  startCrowdAmbience,
+  stopCrowdAmbience,
+} from './game/audio.js';
 
 const PHASE_LABEL = {
   title: 'CARTEL',
@@ -22,6 +34,18 @@ const PHASE_LABEL = {
   resolution: 'RESULTADO',
   crisis: 'CRISIS',
   ending: 'TELÓN FINAL',
+};
+
+const EXECUTE_GRACE_MS = 2000;
+const LIGHT_IDS = CONTROLS.lighting.map((control) => control.id);
+const EMPTY_LIGHT_MIX = Object.fromEntries(LIGHT_IDS.map((id) => [id, 0]));
+
+const primaryLightFor = (mix, last) => {
+  const levels = LIGHT_IDS.map((id) => Number(mix?.[id]) || 0);
+  const top = Math.max(0, ...levels);
+  if (top <= 0) return null;
+  const tied = LIGHT_IDS.filter((id) => (Number(mix?.[id]) || 0) === top);
+  return tied.includes(last) ? last : tied[0];
 };
 
 function TopBar({ state, incident, onToggleSound, onToggleDemo, onRestart }) {
@@ -102,15 +126,50 @@ function TopBar({ state, incident, onToggleSound, onToggleDemo, onRestart }) {
 
 export default function App() {
   const [state, dispatch] = useReducer(gameReducer, undefined, createInitialState);
+  const [showResult, setShowResult] = useState(true);
+  const [lightMix, setLightMix] = useState(() => ({ ...EMPTY_LIGHT_MIX }));
+  const [lastLight, setLastLight] = useState(null);
+  const [masterVolume, setMasterVolume] = useState(0.55);
+  const [fxVolume, setFxLevel] = useState(0.85);
   const incident = INCIDENTS[state.incidentIndex] || INCIDENTS[0];
   const stats = useMemo(() => getAudienceStats(state.audience), [state.audience]);
+  const primaryLight = primaryLightFor(lightMix, lastLight);
+  const stageEventActive = Boolean(state.stage?.activeEvent);
+  const comboSignature = selectionIsComplete(state.selections)
+    ? `${state.selections.lighting}|${state.selections.sound}|${state.selections.object}`
+    : null;
   const handlePersonGone = useCallback((personId) => {
     dispatch({ type: 'PERSON_GONE', personId });
   }, []);
 
   useEffect(() => {
+    if (state.phase !== 'resolution' || !state.result || state.result.crisisResolved) {
+      setShowResult(true);
+      return undefined;
+    }
+    setShowResult(false);
+    const timer = window.setTimeout(() => setShowResult(true), 2800);
+    return () => window.clearTimeout(timer);
+  }, [state.phase, state.narrative.sceneCount, state.result?.crisisResolved]);
+
+  useEffect(() => {
     setMuted(!state.soundEnabled);
   }, [state.soundEnabled]);
+
+  useEffect(() => {
+    setVolume(masterVolume);
+  }, [masterVolume]);
+
+  useEffect(() => {
+    setFxVolume(fxVolume);
+  }, [fxVolume]);
+
+  useEffect(() => {
+    if (state.phase !== 'briefing') return undefined;
+    setLightMix({ ...EMPTY_LIGHT_MIX });
+    setLastLight(null);
+    return undefined;
+  }, [state.phase, state.incidentIndex]);
 
   useEffect(() => {
     if (state.soundCue?.type) {
@@ -122,11 +181,52 @@ export default function App() {
     const ticking =
       ['incident', 'crisis'].includes(state.phase) &&
       state.timerRunning &&
-      !state.demo.paused;
+      !state.demo.paused &&
+      !stageEventActive;
     if (!ticking) return undefined;
     const interval = window.setInterval(() => dispatch({ type: 'TICK' }), 1000);
     return () => window.clearInterval(interval);
-  }, [state.phase, state.timerRunning, state.demo.paused]);
+  }, [state.phase, state.timerRunning, state.demo.paused, stageEventActive]);
+
+  useEffect(() => {
+    const event = state.stage?.activeEvent;
+    if (!event || event.phase !== 'active' || state.demo.paused) return undefined;
+    const interval = window.setInterval(() => dispatch({ type: 'STAGE_EVENT_TICK' }), 1000);
+    return () => window.clearInterval(interval);
+  }, [state.stage?.activeEvent?.id, state.stage?.activeEvent?.phase, state.demo.paused]);
+
+  useEffect(() => {
+    if (state.soundEnabled && !['title', 'ending'].includes(state.phase)) {
+      startCrowdAmbience();
+    } else {
+      stopCrowdAmbience();
+    }
+  }, [state.soundEnabled, state.phase]);
+
+  useEffect(() => {
+    if (!state.soundEnabled || ['title', 'ending'].includes(state.phase)) return;
+    const phaseIntensity = state.phase === 'briefing' ? 0.35 : state.phase === 'crisis' ? 1 : 0.8;
+    setCrowdLevel({
+      intensity: phaseIntensity + (100 - stats.averageSatisfaction) / 260,
+      brightness: 0.35 + stats.averageSatisfaction / 160,
+    });
+  }, [state.soundEnabled, state.phase, stats.averageSatisfaction, state.audience.discontent]);
+
+  useEffect(
+    () => () => {
+      stopCrowdAmbience();
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (state.phase !== 'incident' || stageEventActive || !comboSignature) return undefined;
+    const grace = window.setTimeout(
+      () => dispatch({ type: 'EXECUTE_COMBO' }),
+      EXECUTE_GRACE_MS,
+    );
+    return () => window.clearTimeout(grace);
+  }, [state.phase, stageEventActive, comboSignature]);
 
   useEffect(() => {
     const keyMap = {
@@ -146,24 +246,22 @@ export default function App() {
       const targetTag = event.target?.tagName;
       const onFormControl = ['INPUT', 'TEXTAREA', 'SELECT'].includes(targetTag);
 
-      if (state.phase === 'incident') {
+      if (state.phase === 'incident' && !stageEventActive) {
         const mapped = keyMap[event.key];
         if (mapped && !onFormControl) {
           const [kind, index] = mapped;
           const control = CONTROLS[kind][index];
           if (control) {
             event.preventDefault();
-            dispatch({ type: 'SELECT_CONTROL', kind, id: control.id });
+            if (kind === 'lighting') {
+              const currentLevel = lightMix?.[control.id] || 0;
+              selectLight(control.id, currentLevel > 0 ? 0 : 100);
+            } else {
+              dispatch({ type: 'SELECT_CONTROL', kind, id: control.id });
+            }
             if (state.soundEnabled) previewControl(kind, control);
           }
           return;
-        }
-        if (
-          (event.key === 'Enter' || (event.key === ' ' && targetTag !== 'BUTTON')) &&
-          selectionIsComplete(state.selections)
-        ) {
-          event.preventDefault();
-          dispatch({ type: 'EXECUTE_COMBO' });
         }
         return;
       }
@@ -176,7 +274,7 @@ export default function App() {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [state.phase, state.selections, state.soundEnabled]);
+  }, [state.phase, state.soundEnabled, state.selections, lightMix, stageEventActive]);
 
   const toggleSound = () => {
     const next = !state.soundEnabled;
@@ -206,6 +304,17 @@ export default function App() {
     if (state.soundEnabled) previewControl(kind, control);
   };
 
+  const selectLight = (id, value) => {
+    const next = Math.max(0, Math.min(100, Number(value) || 0));
+    const nextMix = { ...lightMix, [id]: next };
+    setLightMix(nextMix);
+    setLastLight(id);
+    const nextPrimary = primaryLightFor(nextMix, id);
+    if (nextPrimary !== state.selections.lighting) {
+      dispatch({ type: 'SELECT_CONTROL', kind: 'lighting', id: nextPrimary });
+    }
+  };
+
   if (state.phase === 'title') {
     return (
       <div className="app-shell">
@@ -219,6 +328,7 @@ export default function App() {
             onSimulate={(sentiment) => dispatch({ type: 'DEMO_SIMULATE', sentiment })}
             onRestart={() => dispatch({ type: 'DEMO_RESTART' })}
             onToggleSound={toggleSound}
+            onForceStageEvent={() => dispatch({ type: 'DEMO_STAGE_EVENT' })}
           />
         ) : null}
       </div>
@@ -242,6 +352,7 @@ export default function App() {
             onSimulate={(sentiment) => dispatch({ type: 'DEMO_SIMULATE', sentiment })}
             onRestart={() => dispatch({ type: 'DEMO_RESTART' })}
             onToggleSound={toggleSound}
+            onForceStageEvent={() => dispatch({ type: 'DEMO_STAGE_EVENT' })}
           />
         ) : null}
       </div>
@@ -249,7 +360,7 @@ export default function App() {
   }
 
   return (
-    <div className={`app-shell app-shell--${state.phase}`}>
+    <div className={`app-shell app-shell--${state.phase} app-shell--console`}>
       <TopBar
         state={state}
         incident={incident}
@@ -273,6 +384,10 @@ export default function App() {
             timer={state.timer}
             timerMax={state.timerMax}
             crisis={state.crisis}
+            stage={state.stage}
+            lightIntensity={primaryLight ? lightMix[primaryLight] : 0}
+            lightMix={lightMix}
+            primaryLight={primaryLight}
           />
         </div>
 
@@ -283,31 +398,41 @@ export default function App() {
           onGone={handlePersonGone}
         />
 
-        <section className="desk-zone" aria-label="Mesa del técnico">
-          <DeskMonitor state={state} stats={stats} result={state.result} />
-          <DeskControls
+        <section className="desk-stack">
+          <ShowStatusBar state={state} stats={stats} result={state.result} />
+          <ControlPanel
             selections={state.selections}
             onSelect={(kind, id) => dispatch({ type: 'SELECT_CONTROL', kind, id })}
             onPreview={handlePreview}
-            onExecute={() => dispatch({ type: 'EXECUTE_COMBO' })}
+            onLightLevel={selectLight}
             onClear={() => dispatch({ type: 'CLEAR_SELECTION' })}
-            active={state.phase === 'incident'}
+            active={state.phase === 'incident' && !stageEventActive}
             phase={state.phase}
+            fallbackGenre={state.narrative.dominantGenre}
             timer={state.timer}
-          />
-          {state.phase === 'incident' ? (
-            <CrisisPanel
-              state={state}
-              mode="inline"
-              onAction={(actionId) => dispatch({ type: 'USE_ACTION', actionId })}
-            />
-          ) : null}
+            timerMax={state.timerMax}
+            graceMs={EXECUTE_GRACE_MS}
+            lightMix={lightMix}
+            primaryLight={primaryLight}
+            masterVolume={masterVolume}
+            onMasterVolume={setMasterVolume}
+            fxVolume={fxVolume}
+            onFxVolume={setFxLevel}
+          >
+            {state.phase === 'incident' ? (
+              <CrisisPanel
+                state={state}
+                mode="inline"
+                onAction={(actionId) => dispatch({ type: 'USE_ACTION', actionId })}
+              />
+            ) : null}
+          </ControlPanel>
         </section>
       </main>
 
       <footer className="app-footer">
         <span>THE SHOW MUST MUTATE · v0.1 · Hackathon build</span>
-        <span>1–9: elegir · ENTER: improvisar · DEMO: probar · REPETIR: mala idea</span>
+        <span>1–9: elegir · 3/3 → 2 s · DEMO: probar</span>
       </footer>
 
       {state.demo.open ? (
@@ -319,15 +444,36 @@ export default function App() {
           onSimulate={(sentiment) => dispatch({ type: 'DEMO_SIMULATE', sentiment })}
           onRestart={() => dispatch({ type: 'DEMO_RESTART' })}
           onToggleSound={toggleSound}
+          onForceStageEvent={() => dispatch({ type: 'DEMO_STAGE_EVENT' })}
         />
       ) : null}
 
-      <IncidentOverlay
-        state={state}
-        incident={incident}
-        onBegin={() => dispatch({ type: 'BEGIN_INCIDENT' })}
-        onContinue={() => dispatch({ type: 'CONTINUE' })}
-      />
+      {state.phase === 'resolution' && state.result && !showResult ? (
+        <SceneInterlude
+          incident={incident}
+          result={state.result}
+          onSkip={() => setShowResult(true)}
+        />
+      ) : null}
+
+      {!(state.phase === 'resolution' && !showResult) ? (
+        <IncidentOverlay
+          state={state}
+          incident={incident}
+          onBegin={() => dispatch({ type: 'BEGIN_INCIDENT' })}
+          onContinue={() => dispatch({ type: 'CONTINUE' })}
+        />
+      ) : null}
+
+      {state.stage?.activeEvent ? (
+        <StageEventOverlay
+          key={state.stage.activeEvent.id}
+          state={state}
+          event={state.stage.activeEvent}
+          onCollect={(targetId) => dispatch({ type: 'STAGE_EVENT_COLLECT', targetId })}
+          onClose={() => dispatch({ type: 'STAGE_EVENT_CLOSE' })}
+        />
+      ) : null}
 
       {state.phase === 'crisis' ? (
         <CrisisPanel

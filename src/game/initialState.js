@@ -1,5 +1,6 @@
 import { INCIDENTS } from './storyData.js';
 import { createAudience } from './audienceModel.js';
+import { createStageState } from './stageEventEngine.js';
 
 export const createInitialState = () => ({
   version: 1,
@@ -35,6 +36,11 @@ export const createInitialState = () => ({
     status: 'firmes',
     lastLine: 'Lía y Bruno esperan la primera indicación.',
   },
+  desk: {
+    lightIntensity: 76,
+    soundIntensity: 68,
+  },
+  stage: createStageState(),
   chaos: 18,
   improv: 3,
   cooldowns: {
