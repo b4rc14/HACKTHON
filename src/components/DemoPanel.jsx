@@ -7,7 +7,9 @@ export default function DemoPanel({ state, onClose, onPause, onSkip, onSimulate,
     const stats = getAudienceStats(state.audience);
     return {
       phase: state.phase,
-      act: state.incidentIndex + 1,
+      playId: state.playId,
+      scene: state.incidentIndex + 1,
+      showTimer: state.showTimer,
       timer: state.timer,
       paused: state.demo.paused,
       selections: state.selections,
@@ -33,7 +35,7 @@ export default function DemoPanel({ state, onClose, onPause, onSkip, onSimulate,
         coherence: Math.round(state.narrative.coherence),
         tags: state.narrative.establishedTags,
         history: state.narrative.history.map((entry) => ({
-          act: entry.act,
+          scene: entry.sceneNumber || entry.act,
           headline: entry.headline,
           genre: entry.dominantGenre,
           reaction: entry.reaction?.type,
@@ -84,8 +86,9 @@ export default function DemoPanel({ state, onClose, onPause, onSkip, onSimulate,
 
       <div className="demo-panel__status">
         <span>Fase <b>{state.phase}</b></span>
-        <span>Acto <b>{state.incidentIndex + 1}/3</b></span>
-        <span>Reloj <b>{state.timer}s</b></span>
+        <span>Escena <b>{state.incidentIndex + 1}</b></span>
+        <span>Función <b>{state.showTimer ?? 0}s</b></span>
+        <span>Escena <b>{state.timer}s</b></span>
         {state.demo.paused ? <span className="demo-paused">PAUSADO</span> : null}
         {state.demo.skipped ? <span>Saltos <b>{state.demo.skipped}</b></span> : null}
       </div>
@@ -95,7 +98,7 @@ export default function DemoPanel({ state, onClose, onPause, onSkip, onSimulate,
           {state.demo.paused ? '▶ Reanudar' : '⏸ Pausar'}
         </button>
         <button type="button" onClick={onSkip} disabled={['title', 'ending'].includes(state.phase)}>
-          ⏭ Saltar acto
+          ⏭ Saltar escena
         </button>
         <button type="button" onClick={() => onSimulate('positive')} disabled={['title', 'ending'].includes(state.phase)}>
           👏 Reacción +

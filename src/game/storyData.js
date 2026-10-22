@@ -347,6 +347,230 @@ export const INCIDENTS = [
   },
 ];
 
+INCIDENTS.push(
+  {
+    id: 'smoke',
+    act: 1,
+    roman: 'I',
+    playTitle: 'La máquina de humo',
+    location: 'La tramoya',
+    timer: 20,
+    memoryPrompt: 'La niebla puede ser atmósfera o un accidente. Tú decides qué respira el público.',
+    briefing:
+      'La función avanza entre brumas. Alguien ha subido la máquina de humo al máximo y el escenario empieza a desaparecer bajo una niebla espesa.',
+    openingLines: [
+      { speaker: 'LÍA', text: '¿Por qué huele a algodón de feria?' },
+      { speaker: 'BRUNO', text: 'Porque el botón de niebla tiene dos posiciones: off y apocalipsis.' },
+    ],
+    incidentTitle: 'LA MÁQUINA DE HUMO SE DESCONTROLA',
+    incidentText:
+      'La niebla cubre las tablas, los actores y media primera fila. El público tose, ríe y espera. Tienes 20 segundos para convertir la bruma en escena.',
+    baseTags: ['smoke', 'machine', 'fog'],
+    affinity: { romance: 2, comedy: 3, scifi: 2 },
+    bridges: {
+      romance: ['warm', 'intimate', 'sincere', 'music', 'romantic-token', 'organic'],
+      comedy: ['silly', 'slapstick', 'absurd', 'animal', 'noise', 'pink'],
+      scifi: ['alien', 'space', 'tech', 'weird'],
+    },
+    variants: {
+      romance: {
+        headline: 'NIEBLA DE DOS CORAZONES',
+        summary:
+          'La bruma se vuelve intimidad. Lía y Bruno se buscan a tientas entre la niebla y encuentran una promesa que no necesitaba decorado. El público romántico suspira; el humo, por una vez, ayuda.',
+        dialogue: [
+          { speaker: 'LÍA', text: 'No te veo, pero sé perfectamente dónde estás.' },
+          { speaker: 'BRUNO', text: 'Es la primera vez que el humo juega a nuestro favor.' },
+          { speaker: 'NARRADOR', text: 'La niebla dibuja dos siluetas que se niegan a separarse.' },
+        ],
+      },
+      comedy: {
+        headline: 'LA DISCOTECA DEL MÁS ALLÁ',
+        summary:
+          'El humo se convierte en pista de baile. Bruno encuentra un ritmo imposible, Lía improvisa una coreografía y la primera fila tose al compás. Nadie sabe qué obra está viendo, pero todos bailan.',
+        dialogue: [
+          { speaker: 'BRUNO', text: '¡Esto no es una avería, es el número de clausura!' },
+          { speaker: 'LÍA', text: 'Bruno, estamos en el acto de apertura.' },
+          { speaker: 'NARRADOR', text: 'Alguien pone música desde el patio de butacas. La sala entra en éxtasis.' },
+        ],
+      },
+      scifi: {
+        headline: 'SEÑAL EN LA NIEBLA',
+        summary:
+          'La máquina no produce humo: produce una señal. Entre la bruma aparece un mensaje en una lengua que solo los actores fingen entender. El público decide que era parte del guion.',
+        dialogue: [
+          { speaker: 'LÍA', text: 'Bruno, la niebla acaba de decir tu nombre al revés.' },
+          { speaker: 'BRUNO', text: 'Eso explica muchas cosas de mi infancia.' },
+          { speaker: 'NARRADOR', text: 'La señal se repite tres veces. El regidor apunta: «contacto exterior, revisar presupuesto».' },
+        ],
+      },
+    },
+  },
+  {
+    id: 'trapdoor',
+    act: 1,
+    roman: 'I',
+    playTitle: 'El sótano del teatro',
+    location: 'El centro del escenario',
+    timer: 20,
+    memoryPrompt: 'El suelo también es un personaje. Y hoy se ha abierto sin pedir permiso.',
+    briefing:
+      'El decorado cruje. Una trampilla del centro del escenario se abre lentamente y deja ver un sótano que no aparece en los planos del teatro.',
+    openingLines: [
+      { speaker: 'LÍA', text: 'Bruno, ¿el escenario siempre ha tenido un agujero en el centro?' },
+      { speaker: 'BRUNO', text: 'Solo cuando el público merece una sorpresa.' },
+    ],
+    incidentTitle: 'SE ABRE EL SÓTANO',
+    incidentText:
+      'La trampilla queda abierta. Del sótano sube un aire frío, un olor a terciopelo viejo y la sensación de que la obra acaba de encontrar una segunda planta.',
+    baseTags: ['trapdoor', 'basement', 'below'],
+    affinity: { romance: 2, comedy: 2, scifi: 3 },
+    bridges: {
+      romance: ['warm', 'intimate', 'sincere', 'music', 'romantic-token', 'organic'],
+      comedy: ['silly', 'slapstick', 'absurd', 'animal', 'noise', 'pink'],
+      scifi: ['alien', 'space', 'tech', 'weird'],
+    },
+    variants: {
+      romance: {
+        headline: 'BAJO LA ESCENA, OTRA VEZ TÚ',
+        summary:
+          'El sótano guarda el decorado de la primera obra de la compañía, y también una carta que Lía y Bruno se escribieron años atrás. La función se vuelve un reencuentro bajo el escenario.',
+        dialogue: [
+          { speaker: 'LÍA', text: 'Esta carta tiene tu letra. Y polvo de tres temporadas.' },
+          { speaker: 'BRUNO', text: 'El sótano siempre fue mejor archivista que yo.' },
+          { speaker: 'NARRADOR', text: 'La trampilla se cierra despacio, como si quisiera darles intimidad.' },
+        ],
+      },
+      comedy: {
+        headline: 'EL SÓTANO PIDE GUION',
+        summary:
+          'Del sótano sale un técnico jubilado que exige saber qué obra se está representando. Bruno le entrega el guion, el hombre lo corrige y el público aplaude la única crítica literaria de la noche.',
+        dialogue: [
+          { speaker: 'TÉCNICO ANTIGUO', text: 'Esto no es un sótano. Es el almacén de las malas ideas.' },
+          { speaker: 'BRUNO', text: 'Entonces está usted en su casa.' },
+          { speaker: 'LÍA', text: 'Que alguien le dé una silla. Se queda.' },
+        ],
+      },
+      scifi: {
+        headline: 'NIVEL -1: ESTACIÓN GAZEBO',
+        summary:
+          'El sótano es una cámara de descompresión. El teatro llevaba décadas siendo la fachada de una estación orbital y la trampilla acaba de pedir permiso para despegar.',
+        dialogue: [
+          { speaker: 'LÍA', text: 'Bruno, el sótano tiene gravedad propia.' },
+          { speaker: 'BRUNO', text: 'Eso explicaría por qué se me caían siempre las llaves.' },
+          { speaker: 'NARRADOR', text: 'Una luz azul sube por la trampilla. El patio de butacas se agarra a las butacas.' },
+        ],
+      },
+    },
+  },
+  {
+    id: 'cake',
+    act: 1,
+    roman: 'I',
+    playTitle: 'La tarta de escayola',
+    location: 'El banquete de la obra',
+    timer: 20,
+    memoryPrompt: 'El atrezo también tiene hambre. Y el público siempre quiere probar la tarta.',
+    briefing:
+      'La escena del banquete empieza con una tarta enorme en el centro. El problema es que la tarta es de escayola y alguien acaba de anunciar que es comestible.',
+    openingLines: [
+      { speaker: 'LÍA', text: 'Bruno, ¿seguro que esta tarta es de verdad?' },
+      { speaker: 'BRUNO', text: 'Es tan real como nuestro presupuesto de catering.' },
+    ],
+    incidentTitle: 'LA TARTA DE ESCAYOLA',
+    incidentText:
+      'La tarta pesa doce kilos, tiene una cereza pintada y una etiqueta que dice «NO COMER». El público espera que alguien la parta.',
+    baseTags: ['cake', 'prop', 'banquet'],
+    affinity: { romance: 3, comedy: 3, scifi: 1 },
+    bridges: {
+      romance: ['warm', 'intimate', 'sincere', 'music', 'romantic-token', 'organic'],
+      comedy: ['silly', 'slapstick', 'absurd', 'animal', 'noise', 'pink'],
+      scifi: ['alien', 'space', 'tech', 'weird'],
+    },
+    variants: {
+      romance: {
+        headline: 'EL POSTRE DE LA VERDAD',
+        summary:
+          'La tarta se convierte en confesión: dentro hay una carta, una alianza y una disculpa de hace diez años. Lía y Bruno deciden que el banquete puede esperar.',
+        dialogue: [
+          { speaker: 'LÍA', text: 'Hay una carta dentro de la tarta.' },
+          { speaker: 'BRUNO', text: 'Y yo pensando que solo había escayola.' },
+          { speaker: 'NARRADOR', text: 'La cereza pintada rueda por el plato. Nadie la recoge.' },
+        ],
+      },
+      comedy: {
+        headline: 'TARTA PARA LA PRIMERA FILA',
+        summary:
+          'Bruno lanza la tarta al público por error. La primera fila la esquivia, la segunda la aplaude y la tercera pide una ración. El banquete se convierte en espectáculo participativo.',
+        dialogue: [
+          { speaker: 'BRUNO', text: '¡Cuidado, que pesa más que el segundo acto!' },
+          { speaker: 'LÍA', text: 'Eso no era una indicación, Bruno.' },
+          { speaker: 'NARRADOR', text: 'La tarta aterriza en una butaca vacía. El público pide tenedores.' },
+        ],
+      },
+      scifi: {
+        headline: 'COMBUSTIBLE DE CUMPLEAÑOS',
+        summary:
+          'La tarta es un depósito de energía para la nave-gazebo. La cereza es el detonante y la vela, una antena. El banquete despega antes que los actores.',
+        dialogue: [
+          { speaker: 'LÍA', text: 'La tarta está vibrando.' },
+          { speaker: 'BRUNO', text: 'Es normal. Le pasa desde que cambiamos de dimensión.' },
+          { speaker: 'NARRADOR', text: 'La cereza se enciende. El regidor reza en varios idiomas.' },
+        ],
+      },
+    },
+  },
+);
+
+export const PLAYS = [
+  {
+    id: 'jardin',
+    title: 'El jardín de los susurros',
+    subtitle: 'Romance de época con exceso de pólvora',
+    description:
+      'Lía y Bruno prometieron amarse para siempre en un gazebo que ahora huele a gasolina. Una obra de amor, viga caída y atrezo con opiniones.',
+    genre: 'romance',
+    sceneIds: ['explosion', 'dinosaur', 'smoke', 'trapdoor', 'blackout'],
+  },
+  {
+    id: 'gazebo',
+    title: 'El gazebo imposible',
+    subtitle: 'Comedia de desastre y compañía itinerante',
+    description:
+      'La compañía ha montado la misma obra tres veces y ninguna ha salido igual. El gazebo pide protagonismo, la tarta pesa demasiado y nadie recuerda el final.',
+    genre: 'comedy',
+    sceneIds: ['smoke', 'cake', 'dinosaur', 'explosion', 'blackout'],
+  },
+  {
+    id: 'orbita',
+    title: 'Órbita de cartón',
+    subtitle: 'Ciencia ficción de bajo presupuesto',
+    description:
+      'El teatro es una estación orbital disfrazada de teatro. El gazebo es una nave, el dinosaurio un embajador y el sótano una cámara de despegue.',
+    genre: 'scifi',
+    sceneIds: ['blackout', 'trapdoor', 'explosion', 'smoke', 'dinosaur'],
+  },
+  {
+    id: 'viga',
+    title: 'La viga caída',
+    subtitle: 'Tragedia de compañía que no cancela nunca',
+    description:
+      'La Compañía de la Viga Caída lleva años representando la misma función. Hoy el decorado ha decidido participar en el guion.',
+    genre: 'romance',
+    sceneIds: ['cake', 'explosion', 'blackout', 'trapdoor', 'smoke'],
+  },
+];
+
+export const getPlay = (id) => PLAYS.find((play) => play.id === id) || PLAYS[0];
+
+export const getIncidentById = (id) =>
+  INCIDENTS.find((incident) => incident.id === id) || INCIDENTS[0];
+
+export const getCurrentIncident = (state) => {
+  const play = getPlay(state.playId);
+  const queue = state.sceneOrder?.length ? state.sceneOrder : play.sceneIds;
+  return getIncidentById(queue[state.incidentIndex % queue.length]);
+};
+
 export const getIncident = (index) => INCIDENTS[clampIndex(index, 0, INCIDENTS.length - 1)];
 
 function clampIndex(value, min, max) {

@@ -3,7 +3,6 @@ import { selectionIsComplete } from './narrativeEngine.js';
 import { personGone } from './audienceEngine.js';
 import {
   advanceAfterResolution,
-  beginIncident,
   demoSkip,
   resolveCrisis,
   resolveIncident,
@@ -26,12 +25,15 @@ const withSound = (state, enabled) => ({
   soundEnabled: enabled,
 });
 
-const startWithPreferences = (state) =>
-  startShow({
-    ...createInitialState(),
-    soundEnabled: state.soundEnabled,
-    demo: { ...state.demo, open: state.demo.open, paused: false },
-  });
+const startWithPreferences = (state, playId, seed) =>
+  startShow(
+    {
+      ...createInitialState(),
+      soundEnabled: state.soundEnabled,
+      demo: { ...state.demo, open: state.demo.open, paused: false },
+    },
+    { playId, seed },
+  );
 
 const restartWithPreferences = (state) => {
   const fresh = createInitialState();
@@ -47,17 +49,16 @@ const stageEventBlocksControls = (state) => Boolean(state.stage?.activeEvent);
 export const gameReducer = (state, action) => {
   switch (action.type) {
     case 'START_GAME':
-      return startWithPreferences(state);
+      return startWithPreferences(state, action.playId, action.seed);
 
     case 'RESTART':
       return restartWithPreferences(state);
 
     case 'DEMO_RESTART':
-      return startWithPreferences(state);
+      return startWithPreferences(state, action.playId, action.seed);
 
     case 'BEGIN_INCIDENT':
-      if (state.phase !== 'briefing') return state;
-      return maybeStartStageEvent(beginIncident(state));
+      return state;
 
     case 'SELECT_CONTROL': {
       if (state.phase !== 'incident' || stageEventBlocksControls(state)) return state;
@@ -92,8 +93,9 @@ export const gameReducer = (state, action) => {
     }
 
     case 'CONTINUE':
+    case 'NEXT_SCENE':
       if (state.phase !== 'resolution') return state;
-      return advanceAfterResolution(state);
+      return maybeStartStageEvent(advanceAfterResolution(state));
 
     case 'TICK':
       if (stageEventBlocksControls(state)) return state;

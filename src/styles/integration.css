@@ -61,6 +61,32 @@
   color: #f0d39b;
 }
 
+.show-utilities {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  margin-top: 8px;
+}
+.show-utilities button {
+  padding: 6px 10px;
+  border: 1px solid rgba(216, 176, 119, 0.25);
+  border-radius: 5px;
+  background: rgba(24, 13, 10, 0.8);
+  color: #cfbea9;
+  font: inherit;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+}
+.show-utilities button:hover,
+.show-utilities button.is-active {
+  border-color: var(--gold);
+  background: rgba(216, 176, 119, 0.14);
+  color: var(--gold-bright);
+}
+
 @media (max-width: 1100px) {
   .desk-stack .control-desk {
     min-height: 0;
@@ -69,6 +95,69 @@
 
 @media (max-width: 820px) {
   .desk-stack .desk-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------- SELECTOR DE OBRA ------------------------- */
+.title-plays {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: min(620px, 100%);
+  margin: 18px auto 0;
+}
+
+.title-play {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid rgba(216, 176, 119, 0.22);
+  border-radius: 8px;
+  background: rgba(18, 9, 13, 0.62);
+  color: var(--ink-dim);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+.title-play:hover {
+  border-color: color-mix(in srgb, var(--tone) 60%, transparent);
+  transform: translateY(-1px);
+}
+.title-play.is-selected {
+  border-color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 12%, rgba(18, 9, 13, 0.8));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--tone) 16%, transparent);
+}
+.title-play__genre {
+  color: var(--tone);
+  font-size: 7px;
+  letter-spacing: 1.2px;
+}
+.title-play strong {
+  color: var(--ink);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 13px;
+  line-height: 1.1;
+}
+.title-play small {
+  color: var(--ink-faint);
+  font-size: 8px;
+  line-height: 1.25;
+}
+.title-play__description {
+  width: min(620px, 100%);
+  margin: 10px auto 0;
+  color: var(--ink-dim);
+  font-size: 0.66rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+@media (max-width: 620px) {
+  .title-plays {
     grid-template-columns: 1fr;
   }
 }

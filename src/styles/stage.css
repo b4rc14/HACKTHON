@@ -49,6 +49,43 @@
 }
 .stage-act span { color: var(--gold); margin: 0 4px; }
 
+.stage-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+  padding: 3px 8px;
+  border: 1px solid rgba(216, 176, 119, 0.24);
+  border-radius: 5px;
+  background: rgba(12, 6, 9, 0.55);
+  color: var(--ink-faint);
+  font-size: 0.48rem;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+.stage-clock b {
+  color: var(--gold-bright);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+}
+.stage-clock i {
+  display: block;
+  width: 46px;
+  height: 3px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+.stage-clock em {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+  transition: width 300ms linear;
+}
+.stage-clock.is-urgent b { color: #ff9b9b; }
+.stage-clock.is-urgent em { background: #ff7373; }
+.stage-topline .genre-badge { margin-left: 8px; }
+
 .stage-scene {
   position: relative;
   min-height: 430px;
@@ -308,11 +345,70 @@
 }
 .actor--shock .actor__face { transform-origin: 70px 90px; }
 
-.actor__dress { fill: #9f203e; }
+.actor__dress { fill: #b7274a; }
 .actor__dress-fold { opacity: 0.7; }
-.actor__sash { fill: #d9b77c; }
-.actor__suit { fill: #2d4b47; }
+.actor__sash { fill: #e6c58c; }
+.actor__suit { fill: #33655e; }
 .actor__hair { opacity: 0.97; }
+.actor__head,
+.actor__body {
+  stroke: #2a1118;
+  stroke-width: 2.1;
+  stroke-linejoin: round;
+}
+.actor__figure {
+  animation: actorGameIdle 5.4s ease-in-out infinite;
+  filter: saturate(1.08);
+}
+.actor--lia { --actor-tilt: -1deg; }
+.actor--bruno { --actor-tilt: 1.4deg; }
+.actor--bruno .actor__figure { animation-delay: -1.9s; animation-duration: 6.2s; }
+.actor__arm {
+  animation-duration: 4.2s;
+}
+.actor__name::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 6px var(--gold);
+  opacity: 0.8;
+}
+.actor__emote {
+  position: absolute;
+  top: -10px;
+  right: 2%;
+  display: grid;
+  place-items: center;
+  min-width: 23px;
+  height: 23px;
+  padding: 0 4px;
+  border-radius: 50%;
+  background: #f3dfb0;
+  color: #35151e;
+  font-family: var(--display);
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow:
+    0 0 0 2px rgba(42, 17, 24, 0.7),
+    0 7px 14px rgba(0, 0, 0, 0.35);
+  animation: actorEmotePop 2.1s ease-in-out infinite;
+}
+.actor__emote:empty { display: none; }
+
+@keyframes actorGameIdle {
+  0%, 100% { transform: translateY(0) rotate(var(--actor-tilt, 0deg)) scale(1); }
+  30% { transform: translateY(-5px) rotate(calc(var(--actor-tilt, 0deg) + 0.8deg)) scale(1.012, 0.99); }
+  62% { transform: translateY(1px) rotate(calc(var(--actor-tilt, 0deg) - 0.5deg)) scale(0.995, 1.006); }
+}
+@keyframes actorEmotePop {
+  0%, 100% { transform: translateY(0) rotate(-4deg) scale(1); }
+  45% { transform: translateY(-4px) rotate(3deg) scale(1.08); }
+}
 
 /* --------------------------------- PROPS -------------------------------- */
 

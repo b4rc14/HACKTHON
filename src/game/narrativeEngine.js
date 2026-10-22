@@ -1,4 +1,4 @@
-import { INCIDENTS, getControlDef, GENRES } from './storyData.js';
+import { getControlDef, getCurrentIncident, GENRES } from './storyData.js';
 import { clamp, formatSigned, round1, unique } from './utils.js';
 
 const FALLBACK_SELECTION = {
@@ -73,7 +73,7 @@ const actorFlavor = {
 };
 
 export const evaluateNarrative = (state, rawSelection, { timedOut = false } = {}) => {
-  const incident = INCIDENTS[state.incidentIndex] || INCIDENTS[0];
+  const incident = getCurrentIncident(state);
   const filled = filledWithFallback(rawSelection);
   const selection = filled.selection;
   const defs = getSelectionDefs(selection);
@@ -185,7 +185,8 @@ export const evaluateNarrative = (state, rawSelection, { timedOut = false } = {}
   return {
     incidentId: incident.id,
     incidentIndex: state.incidentIndex,
-    act: incident.act,
+    sceneNumber: state.incidentIndex + 1,
+    act: state.incidentIndex + 1,
     timedOut,
     wasFilled: filled.wasFilled,
     selection,

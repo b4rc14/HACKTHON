@@ -1,7 +1,15 @@
 import React from 'react';
 import { GENRES } from '../game/storyData.js';
 
-export default function TitleScreen({ onStart, onToggleSound, soundEnabled }) {
+export default function TitleScreen({
+  plays = [],
+  selectedPlayId,
+  onSelectPlay,
+  onStart,
+  onToggleSound,
+  soundEnabled,
+}) {
+  const selectedPlay = plays.find((play) => play.id === selectedPlayId) || plays[0];
   return (
     <main className="title-screen">
       <div className="title-curtain title-curtain--left" aria-hidden="true" />
@@ -22,7 +30,7 @@ export default function TitleScreen({ onStart, onToggleSound, soundEnabled }) {
       </header>
 
       <section className="title-poster" aria-labelledby="game-title">
-        <p className="title-kicker">UNA OBRA EN TRES ACTOS · CERO ENSAYOS</p>
+        <p className="title-kicker">UNA FUNCIÓN CONTINUA · TRES MINUTOS · CERO ENSAYOS</p>
         <h1 id="game-title" className="title-logo">
           <span>THE SHOW</span>
           <span>MUST</span>
@@ -30,7 +38,7 @@ export default function TitleScreen({ onStart, onToggleSound, soundEnabled }) {
         </h1>
         <p className="title-tagline">
           La obra empieza como un romance. El gazebo explota. Un dinosaurio de cartón cae del telar.
-          Y el público sigue ahí.
+          Y el público sigue ahí. Elige qué desastre vas a dirigir esta noche.
         </p>
 
         <div className="title-role">
@@ -41,19 +49,35 @@ export default function TitleScreen({ onStart, onToggleSound, soundEnabled }) {
           </p>
         </div>
 
-        <div className="title-genres" aria-label="Posibles géneros">
-          {Object.values(GENRES).map((genre) => (
-            <span key={genre.id} className={`genre-chip genre-chip--${genre.id}`}>
-              <span aria-hidden="true">{genre.icon}</span> {genre.upper}
-            </span>
-          ))}
+        <div className="title-plays" role="radiogroup" aria-label="Elige la obra">
+          {plays.map((play) => {
+            const genre = GENRES[play.genre] || GENRES.romance;
+            const selected = play.id === selectedPlay?.id;
+            return (
+              <button
+                key={play.id}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                className={`title-play ${selected ? 'is-selected' : ''}`}
+                style={{ '--tone': genre.color }}
+                onClick={() => onSelectPlay?.(play.id)}
+              >
+                <span className="title-play__genre">{genre.icon} {genre.short}</span>
+                <strong>{play.title}</strong>
+                <small>{play.subtitle}</small>
+              </button>
+            );
+          })}
         </div>
+
+        {selectedPlay ? <p className="title-play__description">{selectedPlay.description}</p> : null}
 
         <button type="button" className="primary-button primary-button--huge" onClick={onStart}>
           <span className="primary-button__small">ABRIR EL TELÓN</span>
           <span className="primary-button__big">EMPEZAR LA FUNCIÓN</span>
         </button>
-        <p className="title-note">Tres actos · 20 segundos por incidente · Muchas formas de fracasar con estilo.</p>
+        <p className="title-note">Tres minutos · escenas encadenadas · el público puede vaciar la sala antes del final.</p>
       </section>
 
       <section className="title-rules" aria-label="Cómo se juega">
@@ -70,7 +94,7 @@ export default function TitleScreen({ onStart, onToggleSound, soundEnabled }) {
         <article>
           <span className="rule-number">03</span>
           <h2>Sobrevive</h2>
-          <p>Tres grupos de público, tres formas de decepcionarlos. Llega al final con sala y orgullo.</p>
+          <p>Un público de personas distintas, cada una con su paciencia. Llega al final con sala y orgullo.</p>
         </article>
       </section>
 

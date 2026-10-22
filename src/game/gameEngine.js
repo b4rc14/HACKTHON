@@ -1,4 +1,10 @@
-import { INCIDENTS, ENDING_META, REACTION_META } from './storyData.js';
+import {
+  ENDING_META,
+  REACTION_META,
+  getCurrentIncident,
+  getIncidentById,
+  getPlay,
+} from './storyData.js';
 import {
   applyCrisisAction,
   applyCrisisTimeout,
@@ -15,7 +21,7 @@ import {
   generateTitle,
   getActorStatus,
 } from './narrativeEngine.js';
-import { clamp, formatSigned, round1, unique } from './utils.js';
+import { clamp, round1, unique } from './utils.js';
 
 const withCue = (state, type) => ({
   ...state,
@@ -48,16 +54,48 @@ const cueForReaction = (reaction, dominantGenre) => {
   return `theme-${dominantGenre}`;
 };
 
-export const startShow = (state) => {
-  const incident = INCIDENTS[0];
+const seededRandom = (seed) => {
+  let value = (Number(seed) || 1) >>> 0;
+  return () => {
+    value += 0x6d2b79f5;
+    let t = value;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+const shuffleScenes = (sceneIds, seed) => {
+  const random = seededRandom(seed);
+  const next = [...sceneIds];
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const target = Math.floor(random() * (index + 1));
+    [next[index], next[target]] = [next[target], next[index]];
+  }
+  return next;
+};
+
+export const startShow = (state, { playId, seed } = {}) => {
+  const play = getPlay(playId || state.playId);
+  const runSeed = Number(seed) || state.runSeed || 1;
+  const sceneOrder = shuffleScenes(play.sceneIds, runSeed);
+  const incident = getIncidentById(sceneOrder[0]);
+  const timer = incident.timer;
+
   return withCue(
     {
       ...state,
-      phase: 'briefing',
+      phase: 'incident',
+      playId: play.id,
+      runSeed,
+      sceneOrder,
       incidentIndex: 0,
-      timer: incident.timer,
-      timerMax: incident.timer,
-      timerRunning: false,
+      sceneIndex: 0,
+      showTimer: state.showTimerMax || 180,
+      showTimerMax: state.showTimerMax || 180,
+      timer,
+      timerMax: timer,
+      timerRunning: true,
       selections: { lighting: null, sound: null, object: null },
       result: null,
       pendingCrisis: null,
@@ -66,47 +104,26 @@ export const startShow = (state) => {
       lastCrisisOutcome: null,
       nextTimerBonus: 0,
       demo: { ...state.demo, paused: false },
+      audience: { ...state.audience, lastReaction: null },
       debugLog: [
         ...state.debugLog,
         {
           id: state.debugLog.length + 2,
-          scene: 0,
-          message: 'Comienza la función. Acto I entre bambalinas.',
+          scene: 1,
+          message: `Comienza «${play.title}». El reloj de la función está en marcha.`,
         },
-      ].slice(-25),
+      ].slice(-30),
     },
     'curtain',
   );
 };
 
-export const beginIncident = (state) => {
-  const incident = INCIDENTS[state.incidentIndex] || INCIDENTS[0];
-  const timer = incident.timer + state.nextTimerBonus;
-  return withCue(
-    withLog(
-      {
-        ...state,
-        phase: 'incident',
-        timer,
-        timerMax: timer,
-        timerRunning: true,
-        nextTimerBonus: 0,
-        selections: { lighting: null, sound: null, object: null },
-        result: null,
-        crisis: null,
-        crisisResolved: false,
-        pendingCrisis: null,
-        demo: { ...state.demo, paused: false },
-        audience: { ...state.audience, lastReaction: null },
-      },
-      `Sube el telón del acto ${incident.roman}: ${incident.incidentTitle}.`,
-    ),
-    'curtain-open',
-  );
-};
+// Compatibilidad con código antiguo: ahora una "entrada" es simplemente la
+// primera escena de la función continua.
+export const beginIncident = (state) => state;
 
 export const resolveIncident = (state, rawSelection, { timedOut = false } = {}) => {
-  const incident = INCIDENTS[state.incidentIndex] || INCIDENTS[0];
+  const incident = getCurrentIncident(state);
   const evaluation = evaluateNarrative(state, rawSelection, { timedOut });
   const audienceBefore = getAudienceStats(state.audience);
   const trustBefore = state.actors.trust;
@@ -132,7 +149,8 @@ export const resolveIncident = (state, rawSelection, { timedOut = false } = {}) 
   chaos = clamp(chaos);
 
   const historyEntry = {
-    act: incident.act,
+    act: state.incidentIndex + 1,
+    sceneNumber: state.incidentIndex + 1,
     incidentId: incident.id,
     headline: evaluation.headline,
     summary: evaluation.summary,
@@ -233,6 +251,7 @@ export const resolveIncident = (state, rawSelection, { timedOut = false } = {}) 
 
   const result = {
     ...evaluation,
+    sceneNumber: state.incidentIndex + 1,
     summary: timeoutCopy ? `${timeoutCopy} ${evaluation.summary}` : evaluation.summary,
     dialogue: timedOut
       ? [
@@ -276,15 +295,28 @@ export const resolveIncident = (state, rawSelection, { timedOut = false } = {}) 
 
 export const tickGame = (state) => {
   if (!state.timerRunning) return state;
+  if (!['incident', 'crisis'].includes(state.phase)) return state;
+
+  const showTimer = Math.max(0, (state.showTimer ?? state.showTimerMax ?? 180) - 1);
+  if (showTimer <= 0) {
+    return finishShow({ ...state, showTimer: 0, timerRunning: false });
+  }
+
+  if (getAudienceStats(state.audience).total <= 0) {
+    return finishShow({ ...state, showTimer, timerRunning: false });
+  }
+
   if (state.phase === 'incident') {
-    if (state.timer > 1) return { ...state, timer: state.timer - 1 };
-    return resolveIncident({ ...state, timer: 0 }, state.selections, { timedOut: true });
+    if (state.timer > 1) return { ...state, showTimer, timer: state.timer - 1 };
+    return resolveIncident(
+      { ...state, showTimer, timer: 0 },
+      state.selections,
+      { timedOut: true },
+    );
   }
-  if (state.phase === 'crisis') {
-    if (state.timer > 1) return { ...state, timer: state.timer - 1 };
-    return resolveCrisis({ ...state, timer: 0 }, null, { timeout: true });
-  }
-  return state;
+
+  if (state.timer > 1) return { ...state, showTimer, timer: state.timer - 1 };
+  return resolveCrisis({ ...state, showTimer, timer: 0 }, null, { timeout: true });
 };
 
 export const beginCrisis = (state) => {
@@ -358,19 +390,24 @@ export const useSpecialAction = (state, actionId) => {
   return withCue(adjusted, actionId === 'curtain' ? 'curtain' : 'click');
 };
 
-const advanceToNextAct = (state) => {
+export const startNextScene = (state) => {
+  const play = getPlay(state.playId);
   const nextIndex = state.incidentIndex + 1;
-  const incident = INCIDENTS[nextIndex];
+  const queue = state.sceneOrder?.length ? state.sceneOrder : play.sceneIds;
+  const incident = getIncidentById(queue[nextIndex % queue.length]);
   const timer = incident.timer + state.nextTimerBonus;
+
   return withCue(
     withLog(
       {
         ...state,
+        phase: 'incident',
         incidentIndex: nextIndex,
-        phase: 'briefing',
+        sceneIndex: nextIndex,
         timer,
         timerMax: timer,
-        timerRunning: false,
+        timerRunning: true,
+        nextTimerBonus: 0,
         selections: { lighting: null, sound: null, object: null },
         result: null,
         pendingCrisis: null,
@@ -380,12 +417,9 @@ const advanceToNextAct = (state) => {
         cooldowns: tickCooldowns(state.cooldowns),
         demo: { ...state.demo, paused: false },
       },
-      `Preparando el acto ${incident.roman}. Bonificación de tiempo: ${formatSigned(
-        state.nextTimerBonus,
-        ' s',
-      )}.`,
+      `Escena ${nextIndex + 1}: ${incident.incidentTitle}.`,
     ),
-    'curtain',
+    'curtain-open',
   );
 };
 
@@ -393,10 +427,13 @@ export const advanceAfterResolution = (state) => {
   if (state.pendingCrisis && !state.crisisResolved) {
     return beginCrisis(state);
   }
-  if (state.incidentIndex < INCIDENTS.length - 1) {
-    return advanceToNextAct(state);
+  if ((state.showTimer ?? state.showTimerMax ?? 180) <= 0) {
+    return finishShow(state);
   }
-  return finishShow(state);
+  if (getAudienceStats(state.audience).total <= 0) {
+    return finishShow(state);
+  }
+  return startNextScene(state);
 };
 
 export const finishShow = (state) => {
@@ -511,15 +548,17 @@ export const computeEnding = (state) => {
 
   const summary = history.length
     ? history.map((entry) => ({
-        act: entry.act,
-        headline: entry.headline || 'Acto omitido',
+        act: entry.sceneNumber || entry.act,
+        sceneNumber: entry.sceneNumber || entry.act,
+        headline: entry.headline || 'Escena omitida',
         genre: entry.dominantGenre,
         reaction: entry.reaction?.label || 'Sin reacción registrada',
         skipped: Boolean(entry.skipped),
       }))
-    : [{ act: 1, headline: 'La función no llegó a empezar', genre: 'romance', reaction: '—' }];
+    : [{ act: 1, sceneNumber: 1, headline: 'La función no llegó a empezar', genre: 'romance', reaction: '—' }];
 
   const badges = [
+    getPlay(state.playId).title,
     `${total}/${state.audience.initialTotal} espectadores`,
     `Coherencia ${Math.round(coherence)}`,
     `Confianza ${Math.round(trust)}`,
@@ -588,24 +627,26 @@ export const computeEnding = (state) => {
 
 export const demoSkip = (state) => {
   if (state.phase === 'ending' || state.phase === 'title') return state;
-  const incident = INCIDENTS[state.incidentIndex] || INCIDENTS[0];
+  const incident = getCurrentIncident(state);
+  const sceneNumber = state.incidentIndex + 1;
   const skipEntry = {
-    act: incident.act,
+    act: sceneNumber,
+    sceneNumber,
     incidentId: incident.id,
-    headline: 'ACTO OMITIDO (MODO DEMO)',
-    summary: 'El técnico salta al siguiente incidente. La función pierde un poco de hilo.',
+    headline: 'ESCENA OMITIDA (MODO DEMO)',
+    summary: 'El técnico salta a la siguiente escena. La función pierde un poco de hilo.',
     dominantGenre: state.narrative.dominantGenre,
     previousDominant: state.narrative.dominantGenre,
     genreChanged: false,
     selection: state.selections,
     tags: ['demo-skip'],
-    comboSignature: `skip-${incident.id}`,
+    comboSignature: `skip-${incident.id}-${sceneNumber}`,
     coherenceDelta: -4,
     newCoherence: clamp(state.narrative.coherence - 4),
     timedOut: false,
     repeatedCombo: false,
     avgDelta: 0,
-    reaction: { type: 'skipped', label: 'Acto omitido', cause: 'Modo demo' },
+    reaction: { type: 'skipped', label: 'Escena omitida', cause: 'Modo demo' },
     audienceDelta: 0,
     satisfactionAfter: null,
     skipped: true,
@@ -630,27 +671,15 @@ export const demoSkip = (state) => {
     crisisResolved: true,
   };
 
-  if (state.incidentIndex < INCIDENTS.length - 1) {
-    const nextIndex = state.incidentIndex + 1;
-    const nextIncident = INCIDENTS[nextIndex];
-    const timer = nextIncident.timer + next.nextTimerBonus;
-    next = {
-      ...next,
-      incidentIndex: nextIndex,
-      phase: 'briefing',
-      timer,
-      timerMax: timer,
-      timerRunning: false,
-      selections: { lighting: null, sound: null, object: null },
-      result: null,
-      lastCrisisOutcome: null,
-      cooldowns: tickCooldowns(next.cooldowns),
-    };
-  } else {
+  if ((next.showTimer ?? next.showTimerMax ?? 180) <= 0) {
     next = finishShow(next);
+  } else if (getAudienceStats(next.audience).total <= 0) {
+    next = finishShow(next);
+  } else {
+    next = startNextScene(next);
   }
 
-  return withCue(withLog(next, 'Modo demo: salto de incidente.'), 'click');
+  return withCue(withLog(next, 'Modo demo: salto de escena.'), 'click');
 };
 
 export const simulateReaction = (state, sentiment) => {
@@ -668,7 +697,7 @@ export const simulateReaction = (state, sentiment) => {
     ovation: 'Ovación simulada: la sala se pone en pie y pide un bis.',
     tomatoes: 'Tomatazos simulados: el público expresa su descontento con la verdura disponible.',
     boo: 'Abucheos simulados: la sala pierde la fe durante unos segundos.',
-    walkout: 'Abandono simulado: el grupo más insatisfecho se levanta y se va.',
+    walkout: 'Abandono simulado: los espectadores más insatisfechos se levantan y se van.',
   };
   let next = applyReactionEffects(state, type, `SIMULACIÓN DEMO · ${labels[type]}`, {
     simulated: true,

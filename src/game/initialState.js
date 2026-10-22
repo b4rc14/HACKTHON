@@ -1,4 +1,4 @@
-import { INCIDENTS } from './storyData.js';
+import { INCIDENTS, PLAYS } from './storyData.js';
 import { createAudience } from './audienceModel.js';
 import { createStageState } from './stageEventEngine.js';
 
@@ -7,6 +7,12 @@ export const createInitialState = () => ({
   // title | briefing | incident | resolution | crisis | ending
   phase: 'title',
   incidentIndex: 0,
+  sceneIndex: 0,
+  playId: PLAYS[0].id,
+  sceneOrder: [],
+  runSeed: 1,
+  showTimer: 180,
+  showTimerMax: 180,
   timer: INCIDENTS[0].timer,
   timerMax: INCIDENTS[0].timer,
   timerRunning: false,

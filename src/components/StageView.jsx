@@ -34,6 +34,7 @@ function ActorFigure({ who, mood, speaking }) {
   const name = isLia ? 'Lía' : 'Bruno';
   const panic = mood === 'panic' || mood === 'shock';
   const nervous = mood === 'nervous';
+  const emote = panic ? '!' : nervous ? '?' : speaking ? '♪' : mood === 'confident' ? '✦' : '';
 
   return (
     <div
@@ -167,6 +168,7 @@ function ActorFigure({ who, mood, speaking }) {
         </g>
       </svg>
       <span className="actor__name">{name}</span>
+      {emote ? <span className="actor__emote" aria-hidden="true">{emote}</span> : null}
     </div>
   );
 }
@@ -363,6 +365,11 @@ export default function StageView({
   lightIntensity = 76,
   lightMix = {},
   primaryLight = null,
+  showTimer = 180,
+  showTimerMax = 180,
+  sceneNumber = 1,
+  playTitle = '',
+  showClock = '',
 }) {
   const lightingId = primaryLight || selections?.lighting;
   const lightColor = LIGHT_COLORS[lightingId] || GENRE_LIGHT[genre] || GENRE_LIGHT.romance;
@@ -398,6 +405,9 @@ export default function StageView({
   const selectedSound = getControlDef('sound', selections?.sound);
   const showCurtainsClosed = phase === 'briefing' || phase === 'crisis';
   const timerPercent = timerMax ? Math.max(0, Math.min(100, (timer / timerMax) * 100)) : 0;
+  const showTimerPercent = showTimerMax
+    ? Math.max(0, Math.min(100, (showTimer / showTimerMax) * 100))
+    : 0;
   const performance = getStagePerformance({
     phase,
     incident,
@@ -473,7 +483,12 @@ export default function StageView({
     >
       <div className="stage-topline">
         <span className="stage-act">
-          ACTO {incident.roman} <span>·</span> {incident.location}
+          ESCENA {sceneNumber} <span>·</span> {playTitle || incident.location}
+        </span>
+        <span className={`stage-clock ${showTimer <= 20 ? 'is-urgent' : ''}`}>
+          <span>FUNCIÓN</span>
+          <b>{showClock}</b>
+          <i><em style={{ width: `${showTimerPercent}%` }} /></i>
         </span>
         <span className={`genre-badge genre-badge--${genre}`}>
           <span aria-hidden="true">{GENRES[genre].icon}</span> {GENRES[genre].upper}

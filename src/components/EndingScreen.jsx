@@ -165,7 +165,7 @@ export default function EndingScreen({ ending, onRestart, onTitle }) {
           <div className="ending-poster__meta">
             <span>{genre.upper}</span>
             <b>{ending.meta.label}</b>
-            <span>3 ACTOS · 1 GAZEBO</span>
+            <span>FUNCIÓN CONTINUA · 3 MINUTOS</span>
           </div>
           <div className="ending-poster__score">
             <span>VALORACIÓN DEL PÚBLICO</span>
@@ -260,8 +260,8 @@ export default function EndingScreen({ ending, onRestart, onTitle }) {
           <span className="panel-kicker">LO QUE OCURRIÓ EN ESCENA</span>
           <ol className="ending-timeline">
             {ending.summary.map((entry) => (
-              <li key={`${entry.act}-${entry.headline}`} className={entry.skipped ? 'is-skipped' : ''}>
-                <span className="ending-timeline__act">ACTO {entry.act}</span>
+              <li key={`${entry.sceneNumber || entry.act}-${entry.headline}`} className={entry.skipped ? 'is-skipped' : ''}>
+                <span className="ending-timeline__act">ESCENA {entry.sceneNumber || entry.act}</span>
                 <div>
                   <strong>{entry.headline}</strong>
                   <small>

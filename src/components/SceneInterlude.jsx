@@ -1,7 +1,7 @@
 import React from 'react';
 import { GENRES } from '../game/storyData.js';
 
-export default function SceneInterlude({ incident, result, onSkip }) {
+export default function SceneInterlude({ incident, sceneNumber, result, onSkip }) {
   if (!result) return null;
   const genre = GENRES[result.dominantGenre] || GENRES.romance;
   return (
@@ -12,7 +12,7 @@ export default function SceneInterlude({ incident, result, onSkip }) {
     >
       <span className="scene-interlude__line" aria-hidden="true" />
       <div className="scene-interlude__tag">
-        <span aria-hidden="true">{genre.icon}</span> EN ESCENA · ACTO {incident.roman}
+        <span aria-hidden="true">{genre.icon}</span> EN ESCENA · ESCENA {sceneNumber || 1}
       </div>
       <div className="scene-interlude__copy">
         <strong>{result.headline}</strong>

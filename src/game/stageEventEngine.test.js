@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialState } from './initialState.js';
-import { startShow } from './gameEngine.js';
+import { startNextScene, startShow } from './gameEngine.js';
 import { gameReducer } from './gameReducer.js';
 import {
   closeStageEvent,
@@ -21,15 +21,15 @@ const incidentState = (overrides = {}) => ({
 });
 
 describe('eventos técnicos del escenario', () => {
-  it('el acto II dispara el foco roto al subir el telón', () => {
+  it('la segunda escena dispara el foco roto al encadenar la función', () => {
     let state = {
       ...startShow(createInitialState()),
-      phase: 'briefing',
       incidentIndex: 1,
+      phase: 'incident',
       timer: 20,
       timerMax: 20,
     };
-    state = gameReducer(state, { type: 'BEGIN_INCIDENT' });
+    state = maybeStartStageEvent(state);
     expect(state.phase).toBe('incident');
     expect(state.stage.activeEvent?.id).toBe('spotlight');
     expect(state.stage.activeEvent?.phase).toBe('active');

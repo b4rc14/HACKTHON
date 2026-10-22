@@ -4,14 +4,13 @@ import StageView from './components/StageView.jsx';
 import AudienceTheater from './components/AudienceTheater.jsx';
 import ControlPanel from './components/ControlPanel.jsx';
 import CrisisPanel from './components/CrisisPanel.jsx';
-import IncidentOverlay from './components/IncidentOverlay.jsx';
 import EndingScreen from './components/EndingScreen.jsx';
 import DemoPanel from './components/DemoPanel.jsx';
 import StageEventOverlay from './components/StageEventOverlay.jsx';
 import SceneInterlude from './components/SceneInterlude.jsx';
 import { createInitialState } from './game/initialState.js';
 import { gameReducer } from './game/gameReducer.js';
-import { INCIDENTS, GENRES, CONTROLS } from './game/storyData.js';
+import { PLAYS, GENRES, CONTROLS, getCurrentIncident, getPlay } from './game/storyData.js';
 import { getAudienceStats } from './game/audienceEngine.js';
 import { getTimerPercent } from './game/gameEngine.js';
 import { selectionIsComplete } from './game/narrativeEngine.js';
@@ -47,9 +46,13 @@ const primaryLightFor = (mix, last) => {
   return tied.includes(last) ? last : tied[0];
 };
 
-function TopBar({ state, incident, onToggleSound, onToggleDemo, onRestart }) {
+const formatClock = (seconds = 0) =>
+  `${Math.floor(Math.max(0, seconds) / 60)}:${String(Math.max(0, seconds) % 60).padStart(2, '0')}`;
+
+function TopBar({ state, play, showTimer, showTimerMax, sceneNumber, onToggleSound, onToggleDemo, onRestart }) {
   const genre = GENRES[state.narrative.dominantGenre];
   const timerPercent = getTimerPercent(state);
+  const showPercent = showTimerMax ? Math.max(0, Math.min(100, (showTimer / showTimerMax) * 100)) : 0;
   const urgent = ['incident', 'crisis'].includes(state.phase) && state.timer <= 5;
 
   return (
@@ -62,23 +65,14 @@ function TopBar({ state, incident, onToggleSound, onToggleDemo, onRestart }) {
         </div>
       </div>
 
-      <div className="topbar__progress" aria-label="Progreso de la obra">
-        {INCIDENTS.map((item, index) => (
-          <span
-            key={item.id}
-            className={[
-              'act-dot',
-              index < state.incidentIndex ? 'is-done' : '',
-              index === state.incidentIndex ? 'is-current' : '',
-              state.phase === 'ending' ? 'is-done' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-          >
-            <b>{item.roman}</b>
-            <small>{index < state.incidentIndex || state.phase === 'ending' ? '✓' : item.id}</small>
-          </span>
-        ))}
+      <div className="topbar__progress topbar__progress--show" aria-label="Progreso de la función">
+        <span className="topbar__play">{play.title}</span>
+        <span className="topbar__showbar" aria-hidden="true">
+          <i style={{ width: `${showPercent}%` }} />
+        </span>
+        <span className="topbar__scene">
+          ESCENA {sceneNumber} · {formatClock(showTimer)}
+        </span>
       </div>
 
       <div className="topbar__right">
@@ -125,12 +119,16 @@ function TopBar({ state, incident, onToggleSound, onToggleDemo, onRestart }) {
 
 export default function App() {
   const [state, dispatch] = useReducer(gameReducer, undefined, createInitialState);
+  const [selectedPlayId, setSelectedPlayId] = useState(PLAYS[0].id);
   const [showResult, setShowResult] = useState(true);
   const [lightMix, setLightMix] = useState(() => ({ ...EMPTY_LIGHT_MIX }));
   const [lastLight, setLastLight] = useState(null);
   const [masterVolume, setMasterVolume] = useState(0.55);
   const [fxVolume, setFxLevel] = useState(0.85);
-  const incident = INCIDENTS[state.incidentIndex] || INCIDENTS[0];
+  const play = getPlay(state.playId);
+  const incident = getCurrentIncident(state);
+  const showTimer = state.showTimer ?? state.showTimerMax ?? 180;
+  const showTimerMax = state.showTimerMax ?? 180;
   const stats = useMemo(() => getAudienceStats(state.audience), [state.audience]);
   const primaryLight = primaryLightFor(lightMix, lastLight);
   const stageEventActive = Boolean(state.stage?.activeEvent);
@@ -142,12 +140,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (state.phase !== 'resolution' || !state.result || state.result.crisisResolved) {
+    if (state.phase !== 'resolution' || !state.result) {
       setShowResult(true);
       return undefined;
     }
     setShowResult(false);
-    const timer = window.setTimeout(() => setShowResult(true), 2800);
+    const timer = window.setTimeout(() => {
+      setShowResult(true);
+      dispatch({ type: 'NEXT_SCENE' });
+    }, 2800);
     return () => window.clearTimeout(timer);
   }, [state.phase, state.narrative.sceneCount, state.result?.crisisResolved]);
 
@@ -293,9 +294,23 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const startNewRun = () => {
+    playCue('click');
+    dispatch({
+      type: 'DEMO_RESTART',
+      playId: selectedPlayId,
+      seed: Date.now(),
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const start = () => {
     playCue('click');
-    dispatch({ type: 'START_GAME' });
+    dispatch({
+      type: 'START_GAME',
+      playId: selectedPlayId,
+      seed: Date.now(),
+    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -317,7 +332,14 @@ export default function App() {
   if (state.phase === 'title') {
     return (
       <div className="app-shell">
-        <TitleScreen onStart={start} onToggleSound={toggleSound} soundEnabled={state.soundEnabled} />
+        <TitleScreen
+          plays={PLAYS}
+          selectedPlayId={selectedPlayId}
+          onSelectPlay={setSelectedPlayId}
+          onStart={start}
+          onToggleSound={toggleSound}
+          soundEnabled={state.soundEnabled}
+        />
         {state.demo.open ? (
           <DemoPanel
             state={state}
@@ -325,7 +347,7 @@ export default function App() {
             onPause={() => dispatch({ type: 'DEMO_TOGGLE_PAUSE' })}
             onSkip={() => dispatch({ type: 'DEMO_SKIP' })}
             onSimulate={(sentiment) => dispatch({ type: 'DEMO_SIMULATE', sentiment })}
-            onRestart={() => dispatch({ type: 'DEMO_RESTART' })}
+            onRestart={startNewRun}
             onToggleSound={toggleSound}
             onForceStageEvent={() => dispatch({ type: 'DEMO_STAGE_EVENT' })}
           />
@@ -339,7 +361,7 @@ export default function App() {
       <div className="app-shell">
         <EndingScreen
           ending={state.ending}
-          onRestart={() => dispatch({ type: 'DEMO_RESTART' })}
+          onRestart={startNewRun}
           onTitle={restart}
         />
         {state.demo.open ? (
@@ -349,7 +371,7 @@ export default function App() {
             onPause={() => dispatch({ type: 'DEMO_TOGGLE_PAUSE' })}
             onSkip={() => dispatch({ type: 'DEMO_SKIP' })}
             onSimulate={(sentiment) => dispatch({ type: 'DEMO_SIMULATE', sentiment })}
-            onRestart={() => dispatch({ type: 'DEMO_RESTART' })}
+            onRestart={startNewRun}
             onToggleSound={toggleSound}
             onForceStageEvent={() => dispatch({ type: 'DEMO_STAGE_EVENT' })}
           />
@@ -360,14 +382,6 @@ export default function App() {
 
   return (
     <div className={`app-shell app-shell--${state.phase} app-shell--console`}>
-      <TopBar
-        state={state}
-        incident={incident}
-        onToggleSound={toggleSound}
-        onToggleDemo={toggleDemo}
-        onRestart={restart}
-      />
-
       <main className="theater-layout">
         <div className="stage-zone">
           <StageView
@@ -382,11 +396,16 @@ export default function App() {
             paused={state.demo.paused}
             timer={state.timer}
             timerMax={state.timerMax}
+            showTimer={state.showTimer}
+            showTimerMax={state.showTimerMax}
             crisis={state.crisis}
             stage={state.stage}
             lightIntensity={primaryLight ? lightMix[primaryLight] : 0}
             lightMix={lightMix}
             primaryLight={primaryLight}
+            sceneNumber={state.incidentIndex + 1}
+            playTitle={play.title}
+            showClock={formatClock(showTimer)}
           />
         </div>
 
@@ -427,6 +446,22 @@ export default function App() {
               />
             ) : null}
           </ControlPanel>
+
+          <div className="show-utilities">
+            <button
+              type="button"
+              className={state.demo.open ? 'is-active' : ''}
+              onClick={toggleDemo}
+            >
+              DEMO
+            </button>
+            <button type="button" onClick={toggleSound}>
+              {state.soundEnabled ? 'SONIDO ON' : 'SONIDO OFF'}
+            </button>
+            <button type="button" onClick={restart}>
+              REINICIAR
+            </button>
+          </div>
         </section>
       </main>
 
@@ -442,7 +477,7 @@ export default function App() {
           onPause={() => dispatch({ type: 'DEMO_TOGGLE_PAUSE' })}
           onSkip={() => dispatch({ type: 'DEMO_SKIP' })}
           onSimulate={(sentiment) => dispatch({ type: 'DEMO_SIMULATE', sentiment })}
-          onRestart={() => dispatch({ type: 'DEMO_RESTART' })}
+          onRestart={startNewRun}
           onToggleSound={toggleSound}
           onForceStageEvent={() => dispatch({ type: 'DEMO_STAGE_EVENT' })}
         />
@@ -451,17 +486,9 @@ export default function App() {
       {state.phase === 'resolution' && state.result && !showResult ? (
         <SceneInterlude
           incident={incident}
+          sceneNumber={state.incidentIndex + 1}
           result={state.result}
-          onSkip={() => setShowResult(true)}
-        />
-      ) : null}
-
-      {!(state.phase === 'resolution' && !showResult) ? (
-        <IncidentOverlay
-          state={state}
-          incident={incident}
-          onBegin={() => dispatch({ type: 'BEGIN_INCIDENT' })}
-          onContinue={() => dispatch({ type: 'CONTINUE' })}
+          onSkip={() => dispatch({ type: 'NEXT_SCENE' })}
         />
       ) : null}
 
