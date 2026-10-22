@@ -168,13 +168,8 @@
   font-size: 8px;
   line-height: 1.25;
 }
-.title-play__description {
-  width: min(620px, 100%);
-  margin: 10px auto 0;
-  color: var(--ink-dim);
-  font-size: 0.66rem;
-  line-height: 1.45;
-  text-align: center;
+.title-poster > .primary-button--huge {
+  margin-top: 18px;
 }
 
 @media (max-width: 620px) {

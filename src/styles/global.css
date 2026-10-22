@@ -1454,7 +1454,7 @@ strong, b {
   letter-spacing: 0.24em;
 }
 .title-logo {
-  margin: 15px 0 20px;
+  margin: 0 0 18px;
   font-family: var(--display);
   font-size: clamp(3.1rem, 9vw, 7.8rem);
   font-weight: 900;
