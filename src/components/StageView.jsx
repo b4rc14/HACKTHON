@@ -364,9 +364,11 @@ export default function StageView({
   timerMax,
   crisis,
   stage,
+  lightIntensity = 76,
 }) {
   const lightingId = selections?.lighting;
   const lightColor = LIGHT_COLORS[lightingId] || GENRE_LIGHT[genre] || GENRE_LIGHT.romance;
+  const lightPower = 0.2 + (Math.max(0, Math.min(100, lightIntensity)) / 100) * 0.8;
   const activeEvent = stage?.activeEvent;
   const brokenLight =
     Boolean(stage?.persistentFx?.brokenLight) || activeEvent?.id === 'spotlight';
@@ -494,7 +496,11 @@ export default function StageView({
           {brokenLight ? <span className="rig-broken-flicker" /> : null}
         </div>
 
-        <div className={`stage-light stage-light--${lightingId || genre}`} aria-hidden="true">
+        <div
+          className={`stage-light stage-light--${lightingId || genre}`}
+          style={{ opacity: lightPower }}
+          aria-hidden="true"
+        >
           <span className="stage-light__beam stage-light__beam--one" />
           <span className="stage-light__beam stage-light__beam--two" />
           <span className="stage-light__beam stage-light__beam--three" />

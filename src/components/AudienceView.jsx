@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { isMuted, speakHeckle } from '../game/audio.js';
 
 const GROUP_ORDER = ['romantics', 'chaos', 'critics'];
 
@@ -55,21 +56,52 @@ const groupSeats = (audience, initialTotal) =>
     const group = audience.groups[id];
     return {
       group,
-      count: Math.max(group.count > 0 ? 1 : 0, Math.round((group.count / initialTotal) * 40)),
+      count: Math.max(group.count > 0 ? 1 : 0, Math.round((group.count / initialTotal) * 60)),
     };
   });
 
 const splitRows = (seatGroups) => {
-  const back = seatGroups.map(({ group, count }) => ({
-    group,
-    count: Math.ceil(count * 0.4),
-  }));
-  const front = seatGroups.map(({ group, count }, index) => ({
-    group,
-    count: Math.max(0, count - back[index].count),
-  }));
-  return [back, front];
+  const rows = [[], [], [], []];
+  seatGroups.forEach(({ group, count }) => {
+    const base = Math.floor(count / rows.length);
+    const remainder = count % rows.length;
+    rows.forEach((row, index) => {
+      row.push({ group, count: base + (index < remainder ? 1 : 0) });
+    });
+  });
+  return rows;
 };
+
+const interleaveSeats = (rowGroups) => {
+  const remaining = rowGroups.map(({ group, count }) => ({ group, count }));
+  const seats = [];
+  while (remaining.some((entry) => entry.count > 0)) {
+    remaining.forEach((entry) => {
+      if (entry.count > 0) {
+        seats.push(entry.group);
+        entry.count -= 1;
+      }
+    });
+  }
+  return seats;
+};
+
+function CrowdRow({ groups, row, reaction }) {
+  const seats = interleaveSeats(groups);
+  return (
+    <div className={`crowd-row crowd-row--${row}`}>
+      {seats.map((group, index) => (
+        <Spectator
+          key={`${row}-${group.id}-${index}`}
+          group={group}
+          index={index + (row === 'back' ? 0 : row === 'midback' ? 2 : row === 'midfront' ? 4 : 6)}
+          reaction={reaction}
+          row={row}
+        />
+      ))}
+    </div>
+  );
+}
 
 function Spectator({ group, index, reaction, row }) {
   const mark = seatMark(reaction, index);
@@ -80,6 +112,7 @@ function Spectator({ group, index, reaction, row }) {
       style={{ '--person': index }}
       aria-hidden="true"
     >
+      <span className="spectator__chair" />
       {mark ? <span className="spectator__mark">{mark}</span> : null}
       <span className="spectator__head">
         <i className="spectator__hair" />
@@ -95,25 +128,9 @@ function Spectator({ group, index, reaction, row }) {
   );
 }
 
-function CrowdCluster({ group, seats, reaction, row }) {
-  return (
-    <span className={`crowd-cluster crowd-cluster--${group.id}`}>
-      {Array.from({ length: seats }, (_, index) => (
-        <Spectator
-          key={`${row}-${group.id}-${index}`}
-          group={group}
-          index={index + (row === 'back' ? 0 : 4)}
-          reaction={reaction}
-          row={row}
-        />
-      ))}
-    </span>
-  );
-}
-
 export default function AudienceView({ audience, stats, reaction, phase, interactionOutcome }) {
   const groups = GROUP_ORDER.map((id) => audience.groups[id]);
-  const [backRow, frontRow] = splitRows(groupSeats(audience, audience.initialTotal));
+  const [backRow, middleBackRow, middleFrontRow, frontRow] = splitRows(groupSeats(audience, audience.initialTotal));
   const emptySeats = Math.max(0, audience.initialTotal - stats.total);
   const positive = reaction?.tone === 'positive';
   const negative = reaction?.tone === 'negative';
@@ -125,6 +142,16 @@ export default function AudienceView({ audience, stats, reaction, phase, interac
     interactionOutcome?.actionId === 'engage'
       ? 'El técnico acaba de mirar al público. La sala responde.'
       : null;
+  const spokenReactionRef = useRef(null);
+
+  useEffect(() => {
+    if (!reaction || !lines.length || reaction.id === spokenReactionRef.current) return;
+    spokenReactionRef.current = reaction.id;
+    const angry = ['boo', 'tomatoes', 'protest', 'walkout'].includes(reaction.type);
+    if (angry && !isMuted()) {
+      speakHeckle(lines[0]);
+    }
+  }, [reaction, lines, phase]);
 
   return (
     <section
@@ -151,23 +178,31 @@ export default function AudienceView({ audience, stats, reaction, phase, interac
 
       <div className={`crowd-scene ${reaction?.type === 'walkout' ? 'has-walkout' : ''}`}>
         <div className="crowd-screen" aria-hidden="true" />
+        <span className="crowd-side crowd-side--left" aria-hidden="true" />
+        <span className="crowd-side crowd-side--right" aria-hidden="true" />
         <span className="exit-sign exit-sign--left">SALIDA</span>
         <span className="exit-sign exit-sign--right">SALIDA</span>
 
         <div className="crowd-rows" aria-hidden="true">
-          <div className="crowd-row crowd-row--back">
-            {backRow.map(({ group, count }) => (
-              <CrowdCluster key={`back-${group.id}`} group={group} seats={count} reaction={reaction} row="back" />
-            ))}
-          </div>
+          <CrowdRow groups={backRow} row="back" reaction={reaction} />
+          <div className="crowd-aisle" />
+          <CrowdRow groups={middleBackRow} row="midback" reaction={reaction} />
+          <div className="crowd-aisle" />
+          <CrowdRow groups={middleFrontRow} row="midfront" reaction={reaction} />
           <div className="crowd-aisle" />
           <div className="crowd-row crowd-row--front">
-            {frontRow.map(({ group, count }) => (
-              <CrowdCluster key={`front-${group.id}`} group={group} seats={count} reaction={reaction} row="front" />
+            {interleaveSeats(frontRow).map((group, index) => (
+              <Spectator
+                key={`front-${group.id}-${index}`}
+                group={group}
+                index={index + 6}
+                reaction={reaction}
+                row="front"
+              />
             ))}
             {emptySeats > 0 ? (
               <span className="crowd-empty" title={`${emptySeats} butacas vacías`}>
-                {Array.from({ length: Math.min(6, emptySeats) }, (_, index) => (
+                {Array.from({ length: Math.min(8, emptySeats) }, (_, index) => (
                   <span key={index} className="empty-chair">⌑</span>
                 ))}
               </span>

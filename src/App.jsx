@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useReducer, useState } from 'react';
 import TitleScreen from './components/TitleScreen.jsx';
 import StageView from './components/StageView.jsx';
 import ControlPanel from './components/ControlPanel.jsx';
-import StatusPanel from './components/StatusPanel.jsx';
 import CrisisPanel from './components/CrisisPanel.jsx';
 import IncidentOverlay from './components/IncidentOverlay.jsx';
 import EndingScreen from './components/EndingScreen.jsx';
@@ -16,7 +15,7 @@ import { INCIDENTS, GENRES, CONTROLS } from './game/storyData.js';
 import { getAudienceStats } from './game/audienceEngine.js';
 import { getTimerPercent } from './game/gameEngine.js';
 import { selectionIsComplete } from './game/narrativeEngine.js';
-import { playCue, previewControl, setMuted, startCrowdAmbience, stopCrowdAmbience, setCrowdLevel } from './game/audio.js';
+import { playCue, previewControl, setMuted, setSoundIntensity, startCrowdAmbience, stopCrowdAmbience, setCrowdLevel } from './game/audio.js';
 
 const PHASE_LABEL = {
   title: 'CARTEL',
@@ -122,6 +121,10 @@ export default function App() {
   useEffect(() => {
     setMuted(!state.soundEnabled);
   }, [state.soundEnabled]);
+
+  useEffect(() => {
+    setSoundIntensity(state.desk?.soundIntensity ?? 68);
+  }, [state.desk?.soundIntensity]);
 
   useEffect(() => {
     if (state.soundCue?.type) {
@@ -303,30 +306,30 @@ export default function App() {
         onRestart={restart}
       />
 
-      <main className="game-layout">
-        <div className="stage-column">
-          <StageView
-            incident={incident}
-            incidentIndex={state.incidentIndex}
-            phase={state.phase}
-            genre={state.narrative.dominantGenre}
-            selections={state.selections}
-            result={state.result}
-            audience={state.audience}
-            stats={stats}
-            actors={state.actors}
-            lastReaction={state.audience.lastReaction}
-            lastCrisisOutcome={state.lastCrisisOutcome}
-            paused={state.demo.paused}
-            timer={state.timer}
-            timerMax={state.timerMax}
-            crisis={state.crisis}
-            stage={state.stage}
-          />
-        </div>
+      <main className="theater-layout">
+        <StageView
+          incident={incident}
+          incidentIndex={state.incidentIndex}
+          phase={state.phase}
+          genre={state.narrative.dominantGenre}
+          selections={state.selections}
+          result={state.result}
+          audience={state.audience}
+          stats={stats}
+          actors={state.actors}
+          lastReaction={state.audience.lastReaction}
+          lastCrisisOutcome={state.lastCrisisOutcome}
+          paused={state.demo.paused}
+          timer={state.timer}
+          timerMax={state.timerMax}
+          crisis={state.crisis}
+          stage={state.stage}
+          lightIntensity={state.desk?.lightIntensity ?? 76}
+        />
 
-        <aside className="cabina-column">
+        <section className="console-shell">
           <ControlPanel
+            state={state}
             selections={state.selections}
             onSelect={(kind, id) => dispatch({ type: 'SELECT_CONTROL', kind, id })}
             onPreview={handlePreview}
@@ -341,7 +344,10 @@ export default function App() {
             stats={stats}
             lastReaction={state.audience.lastReaction}
             stage={state.stage}
+            intensities={state.desk}
+            onIntensityChange={(kind, value) => dispatch({ type: 'SET_INTENSITY', kind, value })}
           />
+
           {state.phase === 'incident' ? (
             <CrisisPanel
               state={state}
@@ -349,20 +355,27 @@ export default function App() {
               onAction={(actionId) => dispatch({ type: 'USE_ACTION', actionId })}
             />
           ) : null}
-          <div className="cabina-note">
-            <span className="panel-kicker">REGLA DE ORO</span>
-            <p>
-              No hay combinación perfecta. Si repites, el público se aburre. Si cambias de género,
-              necesitas un puente con lo anterior.
-            </p>
-            <span className="cabina-note__genre" style={{ color: GENRES[state.narrative.dominantGenre].color }}>
-              {GENRES[state.narrative.dominantGenre].tagline}
-            </span>
-          </div>
-          <HistoryPanel state={state} />
-        </aside>
 
-        <StatusPanel state={state} incident={incident} stats={stats} result={state.result} />
+          <details className="desk-drawer">
+            <summary>
+              <span>CUADERNO DE DIRECCIÓN · MEMORIA DE LA OBRA</span>
+              <small>{state.narrative.history.length}/3 actos registrados</small>
+            </summary>
+            <div className="desk-drawer__body">
+              <div className="cabina-note">
+                <span className="panel-kicker">REGLA DE ORO</span>
+                <p>
+                  No hay combinación perfecta. Si repites, el público se aburre. Si cambias de género,
+                  necesitas un puente con lo anterior.
+                </p>
+                <span className="cabina-note__genre" style={{ color: GENRES[state.narrative.dominantGenre].color }}>
+                  {GENRES[state.narrative.dominantGenre].tagline}
+                </span>
+              </div>
+              <HistoryPanel state={state} />
+            </div>
+          </details>
+        </section>
       </main>
 
       <footer className="app-footer">

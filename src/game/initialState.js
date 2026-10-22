@@ -60,6 +60,10 @@ export const createInitialState = () => ({
     status: 'firmes',
     lastLine: 'Lía y Bruno esperan la primera indicación.',
   },
+  desk: {
+    lightIntensity: 76,
+    soundIntensity: 68,
+  },
   stage: createStageState(),
   chaos: 18,
   improv: 3,

@@ -206,12 +206,16 @@ Los eventos pueden salir bien o mal. El resultado modifica confianza, coherencia
 
 ### 4.8 Mesa de operador
 
-La cabina tiene dos monitores CRT siempre visibles:
+La cabina es una mesa física situada bajo el escenario y la platea:
 
-- **CAM 1 · ESCENARIO:** luz actual, género, actores, objeto seleccionado y estado de avería.
-- **CAM 2 · PLATEA:** aforo, reacción actual y distribución visual de los grupos.
+- **Iluminación:** tres luces, fader vertical de intensidad y descripción de la elección.
+- **Monitor central:** dos CRT en vivo (escenario y platea), satisfacción, coherencia, confianza, caos, descontento, aforo y recursos.
+- **Sonido:** tres opciones, fader de volumen de sala y monitor de reacción.
+- **Objetos y orden:** tres objetos, inclinación de género, combinación actual y botón de improvisar.
+- **Protocolos de crisis:** cuatro acciones en una fila bajo la mesa.
+- **Cuaderno de dirección:** historial y parte de averías plegados bajo la consola.
 
-Debajo están los mandos de iluminación, sonido y objetos. Los botones elegidos se iluminan y el botón de improvisar solo se activa con 3/3.
+Los faders cambian realmente la potencia visual de la luz y el volumen del audio de la partida.
 
 ### 4.9 Público individual
 
@@ -221,7 +225,8 @@ La platea ya no es una barra: cada personita tiene cuerpo, grupo y reacción. Pu
 - lanzar tomates o flores;
 - insultar a los actores con bocadillos;
 - levantarse y abandonar la sala, dejando butacas vacías y reduciendo el aforo real;
-- murmurar, toser, aplaudir y gritar con audio espacial de sala.
+- murmurar, toser, aplaudir y gritar con audio espacial de sala;
+- recibir una voz sintetizada cabreada en las reacciones negativas, con subtítulos.
 
 La escena se ve antes que el panel de resultado: durante unos segundos la obra se representa en el escenario y después aparece el informe con la reacción y las consecuencias.
 
@@ -237,12 +242,12 @@ src/
     TitleScreen.jsx           Portada
     StageView.jsx             Escenario 2.5D, actores articulados, atrezo y efectos
     AudienceView.jsx          Personitas, reacciones, gritos y abandonos
-    ControlPanel.jsx          Mesa de operador, monitores y mandos
+    ControlPanel.jsx          Mesa de operador: luces, sonido, objetos y faders
+    DeskStatus.jsx            Monitor central de estado
     CabinMonitor.jsx          CRT de escenario y platea
     StageEventOverlay.jsx     Minijuego de reparación con arrastre y linterna
     SceneInterlude.jsx        Puesta en escena antes del resultado
     CrisisPanel.jsx           Protocolos inline y modal de crisis
-    StatusPanel.jsx           Estado completo de la función
     HistoryPanel.jsx          Cuaderno de dirección / memoria / parte de averías
     IncidentOverlay.jsx       Briefing y resolución narrativa
     EndingScreen.jsx          Cartel final + export SVG

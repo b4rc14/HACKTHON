@@ -15,8 +15,8 @@ Guía para trabajar en paralelo después del MVP. La regla principal:
 | Motor narrativo | `src/game/narrativeEngine.js`, `initialState.js` | Diseño de mecánicas | Puntuación de género, coherencia, títulos |
 | Público y crisis | `src/game/audienceEngine.js`, tests de motor | Sistemas / balance | Deltas, umbrales, reacciones, protocolos |
 | Orquestación | `src/game/gameEngine.js`, `gameReducer.js` | Arquitectura / QA | Flujo de actos, finales, demo |
-| Escenario y arte | `StageView.jsx`, `AudienceView.jsx`, `CabinMonitor.jsx`, `StageEventOverlay.jsx`, `SceneInterlude.jsx`, `stageChoreography.js`, `stage.css`, `stage-events.css` | Arte / frontend | SVG, animaciones, eventos técnicos, público |
-| Cabina y UI | `ControlPanel.jsx`, `StatusPanel.jsx`, `CrisisPanel.jsx`, `HistoryPanel.jsx`, `controls.css` | UI / frontend | Layout, monitores, estilos, accesibilidad |
+| Escenario y arte | `StageView.jsx`, `AudienceView.jsx`, `CabinMonitor.jsx`, `DeskStatus.jsx`, `StageEventOverlay.jsx`, `SceneInterlude.jsx`, `stageChoreography.js`, `stage.css`, `stage-events.css` | Arte / frontend | SVG, animaciones, eventos técnicos, público |
+| Cabina y UI | `ControlPanel.jsx`, `CrisisPanel.jsx`, `HistoryPanel.jsx`, `controls.css` | UI / frontend | Layout de mesa, monitores, faders, estilos, accesibilidad |
 | Audio | `src/game/audio.js` | Audio / frontend | Ambiente de sala, cues, espacialización |
 | Pantallas | `TitleScreen.jsx`, `EndingScreen.jsx`, `global.css` | UI / presentación | Portada, cartel, export SVG |
 | Demo/QA | `DemoPanel.jsx`, `scripts/simulate.mjs`, tests | QA | Herramientas de prueba |
@@ -89,6 +89,7 @@ El estado inicial está en `src/game/initialState.js`. Campos que otros módulos
     title
   },
   actors: { trust, glitches, status, lastLine },
+  desk: { lightIntensity, soundIntensity },
   stage: {
     activeEvent,            // null | { id, phase, timer, targets, collected, ... }
     eventHistory,           // eventos resueltos: id, act, success, ...
@@ -124,6 +125,7 @@ Todas se lanzan con `dispatch({ type, ...payload })`:
 | `STAGE_EVENT_COLLECT` | `targetId` | Recoge un cristal/chispazo/gallina o falla un señuelo |
 | `STAGE_EVENT_CLOSE` | — | Cierra el resultado y devuelve el control a la escena |
 | `DEMO_STAGE_EVENT` | `eventId?` | Fuerza un evento técnico para la demo |
+| `SET_INTENSITY` | `kind`, `value` | Regula luz/audio de sala (`0–100`) |
 | `DEMO_TOGGLE_PANEL` | — | Abre/cierra demo; al cerrar reanuda |
 | `DEMO_TOGGLE_PAUSE` | — | Pausa/reanuda timer en incidente/crisis |
 | `DEMO_SKIP` | — | Salta de acto sin bloquear |
@@ -156,6 +158,7 @@ Todas se lanzan con `dispatch({ type, ...payload })`:
   timerMax={state.timerMax}
   crisis={state.crisis}
   stage={state.stage}
+  lightIntensity={state.desk.lightIntensity}
 />
 ```
 
@@ -165,6 +168,7 @@ No debe llamar a dispatch. Para añadir arte, usad `selections`, `incident.id`, 
 
 ```jsx
 <ControlPanel
+  state={state}
   selections={...}
   onSelect={(kind, id) => ...}
   onPreview={(kind, control) => ...}
@@ -179,6 +183,8 @@ No debe llamar a dispatch. Para añadir arte, usad `selections`, `incident.id`, 
   stats={stats}
   lastReaction={lastReaction}
   stage={stage}
+  intensities={state.desk}
+  onIntensityChange={(kind, value) => dispatch({ type: 'SET_INTENSITY', kind, value })}
 />
 ```
 
@@ -378,8 +384,8 @@ Sugerencia para 5 personas:
 
 1. **Narrativa** trabaja en `storyData.js` y textos de `narrativeEngine` (sin tocar el resto del motor).
 2. **Balance** trabaja en `audienceEngine.js` + tests + `scripts/simulate.mjs`.
-3. **Arte/escenario** trabaja en `StageView.jsx`, `AudienceView.jsx`, `CabinMonitor.jsx`, `StageEventOverlay.jsx`, `SceneInterlude.jsx`, `stageChoreography.js`, `stage.css`, `stage-events.css`, `audio.js`.
-4. **UI/cabina** trabaja en `ControlPanel.jsx`, `StatusPanel.jsx`, `CrisisPanel.jsx`, `HistoryPanel.jsx`, `controls.css`.
+3. **Arte/escenario** trabaja en `StageView.jsx`, `AudienceView.jsx`, `ControlPanel.jsx`, `DeskStatus.jsx`, `CabinMonitor.jsx`, `StageEventOverlay.jsx`, `SceneInterlude.jsx`, `stageChoreography.js`, `stage.css`, `stage-events.css`, `controls.css`, `audio.js`.
+4. **UI/cabina** trabaja en `CrisisPanel.jsx`, `HistoryPanel.jsx`, `controls.css` y en la capa visual de `ControlPanel.jsx`/`DeskStatus.jsx`.
 5. **QA/orquestación** toca `gameEngine.js`, `gameReducer.js`, `stageEventEngine.js`, `stageEvents.js`, `DemoPanel.jsx`, `README`/`TEAM_GUIDE`.
 
 Para evitar choques:
@@ -397,8 +403,8 @@ Todas parten del mismo commit de `main`:
 |---|---|---|
 | `feature/narrativa-contenido` | Nuevos actos, objetos, diálogos, títulos y callbacks | `storyData.js`, textos de `narrativeEngine.js`, `IncidentOverlay.jsx`, `EndingScreen.jsx` |
 | `feature/publico-balance` | Satisfacción, reacciones, crisis, dificultad y finales | `audienceEngine.js`, `gameEngine.js`, `scripts/simulate.mjs`, tests |
-| `feature/escenario-animacion` | SVGs, actores, público, puesta en escena, audio, eventos y animaciones | `StageView.jsx`, `AudienceView.jsx`, `CabinMonitor.jsx`, `StageEventOverlay.jsx`, `SceneInterlude.jsx`, `stageChoreography.js`, `stage.css`, `stage-events.css`, `audio.js` |
-| `feature/ui-cabina` | Cabina, paneles, historial, accesibilidad y estilos | `ControlPanel.jsx`, `CrisisPanel.jsx`, `StatusPanel.jsx`, `HistoryPanel.jsx`, `controls.css` |
+| `feature/escenario-animacion` | SVGs, actores, público, puesta en escena, audio, mesa inferior, eventos y animaciones | `StageView.jsx`, `AudienceView.jsx`, `ControlPanel.jsx`, `DeskStatus.jsx`, `CabinMonitor.jsx`, `StageEventOverlay.jsx`, `SceneInterlude.jsx`, `stageChoreography.js`, `stage.css`, `stage-events.css`, `controls.css`, `audio.js` |
+| `feature/ui-cabina` | Cabina, paneles, historial, accesibilidad y estilos | `CrisisPanel.jsx`, `HistoryPanel.jsx`, `controls.css`, capa visual de `ControlPanel.jsx`/`DeskStatus.jsx` |
 
 Crear una rama nueva a partir de `main`:
 

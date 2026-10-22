@@ -38,6 +38,7 @@ export default function DemoPanel({ state, onClose, onPause, onSkip, onSimulate,
         })),
       },
       actors: state.actors,
+      desk: state.desk,
       stage: {
         activeEvent: state.stage?.activeEvent
           ? {

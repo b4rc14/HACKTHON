@@ -5,6 +5,9 @@ let context = null;
 let master = null;
 let muted = false;
 let ambience = null;
+let soundIntensity = 0.68;
+
+const masterLevel = () => 0.22 * (0.2 + Math.max(0, Math.min(1, soundIntensity)) * 0.8);
 
 const ensureContext = () => {
   if (typeof window === 'undefined') return null;
@@ -13,7 +16,7 @@ const ensureContext = () => {
   if (!context) {
     context = new AudioContextClass();
     master = context.createGain();
-    master.gain.value = muted ? 0 : 0.22;
+    master.gain.value = muted ? 0 : masterLevel();
     master.connect(context.destination);
   }
   if (context.state === 'suspended') {
@@ -25,7 +28,32 @@ const ensureContext = () => {
 export const setMuted = (value) => {
   muted = Boolean(value);
   if (master && context) {
-    master.gain.setTargetAtTime(muted ? 0 : 0.22, context.currentTime, 0.02);
+    master.gain.setTargetAtTime(muted ? 0 : masterLevel(), context.currentTime, 0.02);
+  }
+};
+
+export const setSoundIntensity = (value) => {
+  soundIntensity = Math.max(0, Math.min(1, Number(value) / 100));
+  if (master && context && !muted) {
+    master.gain.setTargetAtTime(masterLevel(), context.currentTime, 0.12);
+  }
+};
+
+export const speakHeckle = (text) => {
+  if (muted || !text || typeof window === 'undefined' || !window.speechSynthesis) return;
+  try {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices?.() || [];
+    const spanish = voices.find((voice) => voice.lang?.toLowerCase().startsWith('es'));
+    if (spanish) utterance.voice = spanish;
+    utterance.lang = 'es-ES';
+    utterance.pitch = 0.72;
+    utterance.rate = 0.92;
+    utterance.volume = Math.min(0.8, 0.32 + soundIntensity * 0.35);
+    window.speechSynthesis.speak(utterance);
+  } catch {
+    // Voz opcional: el juego continúa sin ella.
   }
 };
 

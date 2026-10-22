@@ -159,6 +159,18 @@ export const gameReducer = (state, action) => {
     case 'SET_SOUND':
       return withSound(state, Boolean(action.enabled));
 
+    case 'SET_INTENSITY': {
+      if (!['light', 'sound'].includes(action.kind)) return state;
+      const value = Math.max(0, Math.min(100, Number(action.value) || 0));
+      return {
+        ...state,
+        desk: {
+          ...state.desk,
+          [`${action.kind}Intensity`]: value,
+        },
+      };
+    }
+
     default:
       return state;
   }
