@@ -264,7 +264,7 @@ Renderiza el briefing en `phase === 'briefing'` y el resultado en `phase === 're
 ```
 
 3. Añadido a `INCIDENTS` cambia automáticamente:
-   - el progreso de actos del header,
+   - el progreso de escenas del header,
    - el bucle de `gameEngine`,
    - el final y el resumen,
    - el test de partida completa (revisad si asumía 3 actos).

@@ -105,7 +105,7 @@ Cerrar el panel mientras está pausado **reanuda el tiempo** para evitar bloqueo
 - Cada incidente declara una `affinity` de género y unos `bridges` para justificar giros.
 - La puntuación de género se atenúa un 62 % y se suma la nueva combinación. El género dominante resultante define el tono de la escena.
 - La coherencia sube al mantener género y reutilizar elementos, y baja al cambiar de género sin puente, repetir combinación o agotar el tiempo.
-- El historial guarda acto, combinación, género, etiquetas, reacción, deltas y coherencia.
+- El historial guarda escena, combinación, género, etiquetas, reacción, deltas y coherencia.
 - Los tags establecidos se acumulan y alimentan:
   - el título del cartel final,
   - los callbacks de diálogo,
