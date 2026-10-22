@@ -15,7 +15,7 @@ import {
   generateTitle,
   getActorStatus,
 } from './narrativeEngine.js';
-import { clamp, formatSigned, round1, sum, unique } from './utils.js';
+import { clamp, formatSigned, round1, unique } from './utils.js';
 
 const withCue = (state, type) => ({
   ...state,
@@ -108,9 +108,7 @@ export const beginIncident = (state) => {
 export const resolveIncident = (state, rawSelection, { timedOut = false } = {}) => {
   const incident = INCIDENTS[state.incidentIndex] || INCIDENTS[0];
   const evaluation = evaluateNarrative(state, rawSelection, { timedOut });
-  const satisfactionBefore = Object.fromEntries(
-    Object.entries(state.audience.groups).map(([id, group]) => [id, group.satisfaction]),
-  );
+  const audienceBefore = getAudienceStats(state.audience);
   const trustBefore = state.actors.trust;
   const improvBefore = state.improv;
   const previousHistory = state.narrative.history || [];
@@ -150,7 +148,7 @@ export const resolveIncident = (state, rawSelection, { timedOut = false } = {}) 
     repeatedCombo: evaluation.repeatedCombo,
     avgDelta: 0,
     reaction: null,
-    groupDeltas: null,
+    audienceDelta: 0,
     satisfactionAfter: null,
   };
 
@@ -213,9 +211,8 @@ export const resolveIncident = (state, rawSelection, { timedOut = false } = {}) 
   }
 
   const pendingCrisis = determineCrisis(next, reaction);
-  const satisfactionAfter = Object.fromEntries(
-    Object.entries(next.audience.groups).map(([id, group]) => [id, group.satisfaction]),
-  );
+  const audienceAfter = getAudienceStats(next.audience);
+  const satisfactionAfter = Math.round(audienceAfter.averageSatisfaction);
 
   const historyWithResult = next.narrative.history.map((entry, index) =>
     index === next.narrative.history.length - 1
@@ -223,7 +220,8 @@ export const resolveIncident = (state, rawSelection, { timedOut = false } = {}) 
           ...entry,
           avgDelta: Math.round(audienceResult.avgDelta * 10) / 10,
           reaction: { type: reaction.type, label: reaction.label, cause: reaction.cause },
-          groupDeltas: audienceResult.deltas,
+          audienceDelta: Math.round(audienceResult.avgDelta * 10) / 10,
+          quality: audienceResult.quality,
           satisfactionAfter,
         }
       : entry,
@@ -242,17 +240,18 @@ export const resolveIncident = (state, rawSelection, { timedOut = false } = {}) 
           ...evaluation.dialogue,
         ]
       : evaluation.dialogue,
-    groupDeltas: audienceResult.deltas,
+    audienceDelta: round1(audienceResult.avgDelta),
+    quality: audienceResult.quality,
     avgDelta: round1(audienceResult.avgDelta),
     reaction,
-    satisfactionBefore,
+    satisfactionBefore: Math.round(audienceBefore.averageSatisfaction),
     satisfactionAfter,
     trustBefore,
     trustAfter: next.actors.trust,
     improvBefore,
     improvAfter: next.improv,
     pendingCrisis: pendingCrisis ? pendingCrisis.title : null,
-    audienceAfter: getAudienceStats(next.audience),
+    audienceAfter,
     memory: evaluation.memory,
   };
 
@@ -556,13 +555,13 @@ export const computeEnding = (state) => {
       decisions: state.stats.decisions,
       timeouts: state.stats.timeouts,
     },
-    groupStats: audienceStats.groups.map((group) => ({
-      id: group.id,
-      name: group.name,
-      count: group.count,
-      satisfaction: Math.round(group.satisfaction),
-      boredom: Math.round(group.boredom),
-      patience: Math.round(group.patience),
+    audienceSegments: audienceStats.segments.map((segment) => ({
+      id: segment.id,
+      name: segment.label,
+      count: segment.count,
+      satisfaction: Math.round(segment.satisfaction),
+      patience: Math.round(segment.patience),
+      criticalCount: segment.criticalCount,
     })),
     summary,
     tags: state.narrative.establishedTags,
@@ -582,7 +581,7 @@ export const computeEnding = (state) => {
       trust: Math.round(10 * (trust / 100)),
       creativity: Math.round(15 * (creativity / 100)),
     },
-    signOff: `Compañía de la Viga Caída · ${sum(audienceStats.groups.map((group) => group.count))} almas en la sala`,
+    signOff: `Compañía de la Viga Caída · ${audienceStats.total} almas en la sala`,
   };
 };
 
@@ -606,7 +605,7 @@ export const demoSkip = (state) => {
     repeatedCombo: false,
     avgDelta: 0,
     reaction: { type: 'skipped', label: 'Acto omitido', cause: 'Modo demo' },
-    groupDeltas: null,
+    audienceDelta: 0,
     satisfactionAfter: null,
     skipped: true,
   };

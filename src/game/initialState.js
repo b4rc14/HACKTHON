@@ -1,16 +1,5 @@
 import { INCIDENTS } from './storyData.js';
-
-const group = (id, name, share, count, satisfaction, boredom) => ({
-  id,
-  name,
-  share,
-  count,
-  satisfaction,
-  boredom,
-  patience: 100,
-  walkouts: 0,
-  reactions: [],
-});
+import { createAudience } from './audienceModel.js';
 
 export const createInitialState = () => ({
   version: 1,
@@ -26,20 +15,7 @@ export const createInitialState = () => ({
     sound: null,
     object: null,
   },
-  audience: {
-    groups: {
-      romantics: group('romantics', 'Románticos', 0.4, 24, 61, 12),
-      chaos: group('chaos', 'Amantes del caos', 0.35, 21, 63, 9),
-      critics: group('critics', 'Críticos', 0.25, 15, 57, 15),
-    },
-    initialTotal: 60,
-    discontent: 12,
-    lastReaction: null,
-    reactionHistory: [],
-    ovation: false,
-    bisRequested: false,
-    walkouts: 0,
-  },
+  audience: createAudience(),
   narrative: {
     genreScores: {
       romance: 14,

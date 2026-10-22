@@ -15,19 +15,19 @@ El juego **se puede jugar completo**:
 - Tres actos con incidente, introducción, temporizador de 20 s y resolución.
 - Cabina con 3 luces, 3 sonidos y 3 objetos.
 - Combinaciones con puntuación por género, memoria narrativa y penalización por repetición.
-- Tres grupos de público con satisfacción, aburrimiento, paciencia y reacciones propias.
+- Platea de 60 personas individuales con criticidad, satisfacción, paciencia y abandono animado.
 - Aplausos, carcajadas, flores, ovación, murmullos, bostezos, abucheos, tomatazos, abandono y protesta.
 - Crisis con cuatro protocolos, costes, cooldowns y resolución automática por tiempo.
 - Confianza de actores, recursos de improvisación y nivel de caos.
 - Cuatro tipos de final y cartel personalizado descargable en SVG.
 - Modo demo para hackathon con reinicio, salto de acto, pausa, simulación de reacciones y snapshot JSON.
-- 9 pruebas automatizadas del motor.
+- 14 pruebas automatizadas del motor y del modelo de público.
 
 ### Comprobaciones ejecutadas
 
 ```bash
 npm install
-npm test       # 9 tests pasan
+npm test       # 14 tests pasan
 npm run build  # build de producción correcto
 ```
 
@@ -115,26 +115,21 @@ La escena final se elige por género dominante e incidente. Los guiones base est
 
 ### 4.2 Público
 
-Tres grupos, con reparto y preferencias distintas:
+La platea son **60 personas individuales**, no grupos. Cada butaca tiene su propia
+`criticality` (0–1), satisfacción, paciencia, aburrimiento y estado
+(`seated`, `leaving`, `gone`). La lógica vive en `src/game/audienceModel.js`.
 
-| Grupo | Inicial | Le gusta | Le molesta |
-|---|---:|---|---|
-| Románticos | 24 (40 %) | emoción, sinceridad, coherencia romántica | giros gratuitos, caos sinsentido |
-| Amantes del caos | 21 (35 %) | absurdo, humor, sorpresas | repetición, solemnidad excesiva |
-| Críticos | 15 (25 %) | originalidad, estructura, callbacks | incoherencia, oportunismo vacío |
-
-Cada grupo tiene `count`, `satisfaction`, `boredom`, `patience`, `reactions` y `walkouts`.
-
-Se aplican:
-
-- deltas distintos por género y coherencia,
-- bonificación por reutilizar etiquetas,
-- penalización por combinación repetida,
-- penalización por objeto repetido,
-- subida de aburrimiento cada acto,
-- pérdida de paciencia con malas decisiones,
-- descontento acumulado,
-- abandono efectivo de butacas (los contadores bajan).
+- La **criticidad** decide el umbral: una persona muy crítica necesita una obra
+  mejor para mantenerse en verde y pasa a rojo antes.
+- La **calidad global** de cada escena se calcula con coherencia, novedad,
+  repetición y tiempo agotado.
+- La satisfacción se actualiza con `(calidad - umbral) * sensibilidad + bias`.
+- El color es el estado visible: verde (contento), ámbar (serio) y rojo (crítico).
+- Un espectador rojo empieza a perder paciencia; si no mejora, pasa a `leaving` y
+  abandona la sala. La animación lo levanta, lo lleva al hueco de delante, lo baja
+  por el pasillo y lo saca por una salida inferior.
+- El descontento y los abandonos son agregados de las personas; no hay contadores
+  de grupo.
 
 ### 4.3 Reacciones
 
@@ -143,7 +138,7 @@ Se aplican:
 | Reacción | Consecuencia jugable |
 |---|---|
 | Aplausos | +1 satisfacción, +2 s en la próxima escena |
-| Carcajadas | baja aburrimiento, sube satisfacción del público del caos |
+| Carcajadas | baja aburrimiento y sube la satisfacción del público más tolerante |
 | Flores | +1 improvisación, flores visibles en escena |
 | Ovación | +3 satisfacción, +1 improvisación, +3 s, petición de bis |
 | Murmullos | baja paciencia |
@@ -161,9 +156,9 @@ Se activan por descontento, protesta, tomatazos, abandono, confianza baja, coher
 
 Cuatro protocolos:
 
-1. **Improvisar diálogo** — cuesta 1 recurso de improvisación y 1 uso por escena; sube confianza, coherencia y satisfacción de románticos/críticos.
+1. **Improvisar diálogo** — cuesta 1 recurso de improvisación y 1 uso por escena; sube confianza, coherencia y satisfacción, sobre todo en las personas más críticas.
 2. **Cambiar el ritmo** — 1 uso por escena; baja aburrimiento y sube caos.
-3. **Interactuar con el público** — 1 uso por escena; ayuda al grupo más insatisfecho.
+3. **Interactuar con el público** — 1 uso por escena; ayuda a la persona más insatisfecha.
 4. **Bajar el telón** — 1 uso por escena; resuelve la crisis pero enfría la sala y rompe coherencia.
 
 Además, **Dejar pasar la crisis** siempre está disponible para evitar cualquier bloqueo. Si el temporizador de crisis llega a 0, se aplica una penalización automática y se continúa.
@@ -198,10 +193,9 @@ src/
   components/
     TitleScreen.jsx           Portada
     StageView.jsx             Escenario SVG, actores, atrezo, incidentes
-    AudienceView.jsx          Platea, reacciones y causa visible
-    ControlPanel.jsx          Luces / sonido / objetos + ejecutar
+    AudienceTheater.jsx       Platea de 60 personas, colores y salida animada
+    DeskPanel.jsx             Monitor de cabina + canales de luz, sonido y objeto
     CrisisPanel.jsx           Protocolos inline y modal de crisis
-    StatusPanel.jsx           Estado completo de la función
     HistoryPanel.jsx          Cuaderno de dirección / memoria
     IncidentOverlay.jsx       Briefing y resolución narrativa
     EndingScreen.jsx          Cartel final + export SVG
@@ -210,7 +204,8 @@ src/
     initialState.js           Estado inicial y constantes de partida
     storyData.js              Contenido: controles, actos, reacciones, crisis
     narrativeEngine.js        Puntuación de género, coherencia, diálogo, títulos
-    audienceEngine.js         Grupos, reacciones, crisis, protocolos
+    audienceModel.js          Personas, criticidad, satisfacción y abandonos
+    audienceEngine.js         Reacciones, crisis y protocolos sobre personas
     gameEngine.js             Resolución de actos, crisis, finales, demo
     gameReducer.js            Acciones y transiciones
     audio.js                  Web Audio API, sin assets externos
@@ -218,8 +213,11 @@ src/
     gameEngine.test.js        Tests del motor
   styles/
     global.css                Layout, portada, modales, estado, final
-    stage.css                 Escenario, actores, SVG, platea, animaciones
-    controls.css              Cabina, botones, crisis, historial
+    stage.css                 Escenario, actores, SVG, animaciones
+    audience.css              Platea, butacas, salidas y animación de abandono
+    desk.css                  Mesa del técnico, monitor y canales
+    layout.css                Composición vertical escenario / platea / mesa
+    controls.css              Botones y crisis
 scripts/
   simulate.mjs                Simulador de balance
 ```

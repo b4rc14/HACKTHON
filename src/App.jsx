@@ -1,13 +1,12 @@
-import React, { useEffect, useMemo, useReducer } from 'react';
+import React, { useCallback, useEffect, useMemo, useReducer } from 'react';
 import TitleScreen from './components/TitleScreen.jsx';
 import StageView from './components/StageView.jsx';
-import ControlPanel from './components/ControlPanel.jsx';
-import StatusPanel from './components/StatusPanel.jsx';
+import AudienceTheater from './components/AudienceTheater.jsx';
+import { DeskControls, DeskMonitor } from './components/DeskPanel.jsx';
 import CrisisPanel from './components/CrisisPanel.jsx';
 import IncidentOverlay from './components/IncidentOverlay.jsx';
 import EndingScreen from './components/EndingScreen.jsx';
 import DemoPanel from './components/DemoPanel.jsx';
-import HistoryPanel from './components/HistoryPanel.jsx';
 import { createInitialState } from './game/initialState.js';
 import { gameReducer } from './game/gameReducer.js';
 import { INCIDENTS, GENRES, CONTROLS } from './game/storyData.js';
@@ -105,6 +104,9 @@ export default function App() {
   const [state, dispatch] = useReducer(gameReducer, undefined, createInitialState);
   const incident = INCIDENTS[state.incidentIndex] || INCIDENTS[0];
   const stats = useMemo(() => getAudienceStats(state.audience), [state.audience]);
+  const handlePersonGone = useCallback((personId) => {
+    dispatch({ type: 'PERSON_GONE', personId });
+  }, []);
 
   useEffect(() => {
     setMuted(!state.soundEnabled);
@@ -256,8 +258,8 @@ export default function App() {
         onRestart={restart}
       />
 
-      <main className="game-layout">
-        <div className="stage-column">
+      <main className="theater-layout">
+        <div className="stage-zone">
           <StageView
             incident={incident}
             incidentIndex={state.incidentIndex}
@@ -265,8 +267,6 @@ export default function App() {
             genre={state.narrative.dominantGenre}
             selections={state.selections}
             result={state.result}
-            audience={state.audience}
-            stats={stats}
             actors={state.actors}
             lastReaction={state.audience.lastReaction}
             paused={state.demo.paused}
@@ -276,8 +276,16 @@ export default function App() {
           />
         </div>
 
-        <aside className="cabina-column">
-          <ControlPanel
+        <AudienceTheater
+          people={state.audience.people}
+          stats={stats}
+          phase={state.phase}
+          onGone={handlePersonGone}
+        />
+
+        <section className="desk-zone" aria-label="Mesa del técnico">
+          <DeskMonitor state={state} stats={stats} result={state.result} />
+          <DeskControls
             selections={state.selections}
             onSelect={(kind, id) => dispatch({ type: 'SELECT_CONTROL', kind, id })}
             onPreview={handlePreview}
@@ -285,7 +293,6 @@ export default function App() {
             onClear={() => dispatch({ type: 'CLEAR_SELECTION' })}
             active={state.phase === 'incident'}
             phase={state.phase}
-            fallbackGenre={state.narrative.dominantGenre}
             timer={state.timer}
           />
           {state.phase === 'incident' ? (
@@ -295,20 +302,7 @@ export default function App() {
               onAction={(actionId) => dispatch({ type: 'USE_ACTION', actionId })}
             />
           ) : null}
-          <div className="cabina-note">
-            <span className="panel-kicker">REGLA DE ORO</span>
-            <p>
-              No hay combinación perfecta. Si repites, el público se aburre. Si cambias de género,
-              necesitas un puente con lo anterior.
-            </p>
-            <span className="cabina-note__genre" style={{ color: GENRES[state.narrative.dominantGenre].color }}>
-              {GENRES[state.narrative.dominantGenre].tagline}
-            </span>
-          </div>
-          <HistoryPanel state={state} />
-        </aside>
-
-        <StatusPanel state={state} incident={incident} stats={stats} result={state.result} />
+        </section>
       </main>
 
       <footer className="app-footer">

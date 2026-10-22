@@ -1,16 +1,16 @@
 import React from 'react';
 import { GENRES } from '../game/storyData.js';
 
-const GROUP_TONE = {
-  romantics: GENRES.romance.color,
-  chaos: GENRES.comedy.color,
-  critics: GENRES.scifi.color,
+const SEGMENT_TONE = {
+  low: '#7bd6a0',
+  mid: '#e8bf5a',
+  high: '#e35d5d',
 };
 
-const GROUP_LABEL = {
-  romantics: 'Románticos',
-  chaos: 'Amantes del caos',
-  critics: 'Críticos',
+const SEGMENT_LABEL = {
+  low: 'Tolerantes',
+  mid: 'Exigentes',
+  high: 'Muy críticos',
 };
 
 const escapeXml = (value) =>
@@ -47,7 +47,7 @@ const buildPosterSvg = (ending) => {
     )
     .join('');
 
-  const groupLines = ending.groupStats
+  const groupLines = ending.audienceSegments
     .map(
       (group, index) =>
         `<text x="94" y="${786 + index * 30}" font-family="Arial, sans-serif" font-size="17" fill="#d7c3a7">${escapeXml(group.name)}</text>
@@ -242,14 +242,14 @@ export default function EndingScreen({ ending, onRestart, onTitle }) {
         <div className="ending-card">
           <span className="panel-kicker">EL PÚBLICO QUE SE QUEDÓ</span>
           <div className="ending-groups">
-            {ending.groupStats.map((group) => (
-              <div key={group.id} className="ending-group" style={{ '--tone': GROUP_TONE[group.id] }}>
+            {ending.audienceSegments.map((group) => (
+              <div key={group.id} className="ending-group" style={{ '--tone': SEGMENT_TONE[group.id] }}>
                 <div className="ending-group__head">
-                  <span>{GROUP_LABEL[group.id]}</span>
+                  <span>{SEGMENT_LABEL[group.id]}</span>
                   <b>{group.count} · {group.satisfaction}%</b>
                 </div>
                 <div className="ending-group__bar"><i style={{ width: `${group.satisfaction}%` }} /></div>
-                <small>Aburrimiento {group.boredom} · Paciencia {group.patience}</small>
+                <small>{group.criticalCount} en rojo · Paciencia {group.patience}</small>
               </div>
             ))}
           </div>

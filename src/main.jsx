@@ -4,6 +4,9 @@ import App from './App.jsx';
 import './styles/global.css';
 import './styles/stage.css';
 import './styles/controls.css';
+import './styles/audience.css';
+import './styles/desk.css';
+import './styles/layout.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

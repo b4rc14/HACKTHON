@@ -1,18 +1,6 @@
 import React from 'react';
 import { GENRES } from '../game/storyData.js';
 
-const GROUP_LABEL = {
-  romantics: 'Románticos',
-  chaos: 'Caos',
-  critics: 'Críticos',
-};
-
-const GROUP_TONE = {
-  romantics: GENRES.romance.color,
-  chaos: GENRES.comedy.color,
-  critics: GENRES.scifi.color,
-};
-
 function Briefing({ state, incident, onBegin }) {
   const genre = GENRES[state.narrative.dominantGenre];
   return (
@@ -128,18 +116,25 @@ function Result({ state, incident, onContinue }) {
 
         <div className="result-grid">
           <div className="result-group-deltas">
-            {Object.entries(result.groupDeltas).map(([id, delta]) => (
-              <div key={id} className="result-delta" style={{ '--tone': GROUP_TONE[id] }}>
-                <span>{GROUP_LABEL[id]}</span>
-                <b className={delta >= 0 ? 'is-positive' : 'is-negative'}>
-                  {delta >= 0 ? '+' : ''}{delta}
-                </b>
-                <small>
-                  {Math.round(result.satisfactionBefore?.[id] || 0)} →{' '}
-                  {Math.round(result.satisfactionAfter?.[id] || 0)}
-                </small>
-              </div>
-            ))}
+            <div className="result-delta" style={{ '--tone': '#7bd6a0' }}>
+              <span>SATISFACCIÓN</span>
+              <b className={result.audienceDelta >= 0 ? 'is-positive' : 'is-negative'}>
+                {result.audienceDelta >= 0 ? '+' : ''}{result.audienceDelta}
+              </b>
+              <small>
+                {result.satisfactionBefore}% → {result.satisfactionAfter}%
+              </small>
+            </div>
+            <div className="result-delta" style={{ '--tone': '#e35d5d' }}>
+              <span>CRÍTICOS</span>
+              <b>{result.audienceAfter.criticalCount}</b>
+              <small>de {result.audienceAfter.total} en sala</small>
+            </div>
+            <div className="result-delta" style={{ '--tone': '#e8bf5a' }}>
+              <span>CALIDAD</span>
+              <b>{result.quality}</b>
+              <small>escena evaluada</small>
+            </div>
           </div>
           <div className="result-impact">
             <span>Actores <b>{result.trustBefore} → {result.trustAfter}</b></span>

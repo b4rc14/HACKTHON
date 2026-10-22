@@ -1,0 +1,450 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <radialGradient id="roomGlow" cx="50%" cy="34%" r="72%">
+      <stop offset="0%" stop-color="#2a1018"/>
+      <stop offset="46%" stop-color="#160a10"/>
+      <stop offset="100%" stop-color="#080507"/>
+    </radialGradient>
+    <linearGradient id="stageBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#24121a"/>
+      <stop offset="58%" stop-color="#321826"/>
+      <stop offset="100%" stop-color="#180b10"/>
+    </linearGradient>
+    <linearGradient id="backdrop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#27223a"/>
+      <stop offset="55%" stop-color="#3b2130"/>
+      <stop offset="100%" stop-color="#1b0c12"/>
+    </linearGradient>
+    <linearGradient id="curtain" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#3b0915"/>
+      <stop offset="22%" stop-color="#7f1a2b"/>
+      <stop offset="44%" stop-color="#4b0d1a"/>
+      <stop offset="66%" stop-color="#8d2033"/>
+      <stop offset="100%" stop-color="#360812"/>
+    </linearGradient>
+    <linearGradient id="curtainTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8d2033"/>
+      <stop offset="100%" stop-color="#430b17"/>
+    </linearGradient>
+    <linearGradient id="stageFloor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5d322d"/>
+      <stop offset="100%" stop-color="#2a1115"/>
+    </linearGradient>
+    <linearGradient id="seatBack" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#b93249"/>
+      <stop offset="55%" stop-color="#8e2034"/>
+      <stop offset="100%" stop-color="#5e1220"/>
+    </linearGradient>
+    <linearGradient id="seatCushion" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a92a41"/>
+      <stop offset="100%" stop-color="#5e1220"/>
+    </linearGradient>
+    <linearGradient id="deskTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a2118"/>
+      <stop offset="45%" stop-color="#24130f"/>
+      <stop offset="100%" stop-color="#120a08"/>
+    </linearGradient>
+    <linearGradient id="panelMetal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3b2319"/>
+      <stop offset="100%" stop-color="#1b0f0b"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a1a13"/>
+      <stop offset="100%" stop-color="#04100b"/>
+    </linearGradient>
+    <linearGradient id="lightBeam" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe2a3" stop-opacity=".55"/>
+      <stop offset="100%" stop-color="#ffe2a3" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="scanlines" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="1" fill="#9fffc4" opacity=".035"/>
+    </pattern>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softShadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#000" flood-opacity=".55"/>
+    </filter>
+
+    <g id="seat">
+      <rect x="-31" y="-42" width="62" height="44" rx="10" fill="url(#seatBack)" stroke="#3d0c16" stroke-width="1"/>
+      <path d="M -24 -37 Q 0 -47 24 -37" fill="none" stroke="#e16a7b" stroke-width="1.4" opacity=".22"/>
+      <rect x="-27" y="-4" width="54" height="16" rx="6" fill="url(#seatCushion)" stroke="#3d0c16" stroke-width="1"/>
+      <rect x="-35" y="-8" width="7" height="20" rx="3" fill="#5e1421"/>
+      <rect x="28" y="-8" width="7" height="20" rx="3" fill="#5e1421"/>
+      <ellipse cx="0" cy="15" rx="30" ry="5" fill="#000" opacity=".35"/>
+    </g>
+
+    <g id="spectator">
+      <ellipse cx="0" cy="9" rx="17" ry="4.5" fill="#000" opacity=".45"/>
+      <path d="M -15 7 C -18 -10 -14 -22 0 -22 C 14 -22 18 -10 15 7 Z" fill="currentColor"/>
+      <circle cx="0" cy="-34" r="12" fill="currentColor"/>
+      <path d="M -9 -37 Q 0 -45 9 -37" fill="none" stroke="#fff" stroke-width="2" opacity=".20" stroke-linecap="round"/>
+      <path d="M -10 -14 Q 0 -10 10 -14" fill="none" stroke="#000" stroke-width="1.5" opacity=".13"/>
+    </g>
+
+    <g id="seated">
+      <circle cx="0" cy="-34" r="12" fill="currentColor"/>
+      <path d="M -15 -29 C -15 -18 -12 -8 0 -8 C 12 -8 15 -18 15 -29 Z" fill="currentColor"/>
+      <path d="M -9 -37 Q 0 -45 9 -37" fill="none" stroke="#fff" stroke-width="2" opacity=".20" stroke-linecap="round"/>
+    </g>
+
+    <g id="seatFront">
+      <rect x="-29" y="-7" width="58" height="21" rx="8" fill="url(#seatCushion)" stroke="#3d0c16" stroke-width="1"/>
+      <path d="M -24 -3 L 24 -3" stroke="#e16a7b" stroke-width="1" opacity=".18"/>
+    </g>
+  </defs>
+
+  <rect width="1920" height="1080" fill="#0b0709"/>
+  <rect width="1920" height="1080" fill="url(#roomGlow)"/>
+
+  <!-- ======================= TOP HUD ======================= -->
+  <rect x="0" y="0" width="1920" height="58" fill="#080507" opacity=".9"/>
+  <line x1="0" y1="58" x2="1920" y2="58" stroke="#5b3521" stroke-width="1" opacity=".8"/>
+  <text x="38" y="26" fill="#f0d39b" font-family="Georgia, serif" font-size="17" font-weight="700" letter-spacing="1.5">THE SHOW MUST MUTATE</text>
+  <text x="39" y="42" fill="#9c8b84" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="8" letter-spacing="2.2">CABINA DE LUCES · FUNCIÓN EN CURSO</text>
+
+  <g text-anchor="middle" font-family="Trebuchet MS, Segoe UI, sans-serif">
+    <text x="960" y="20" fill="#9c8b84" font-size="8" letter-spacing="2.4">OBRA EN CURSO · 00:12:34</text>
+    <text x="960" y="41" fill="#f4e6ce" font-family="Georgia, serif" font-size="17" font-weight="700" letter-spacing="1">EL GAZEBO IMPOSIBLE</text>
+    <text x="960" y="54" fill="#d8b077" font-size="7.5" letter-spacing="2">ROMANCE DE EMERGENCIA · DESVÍOS ABSURDOS</text>
+  </g>
+
+  <g font-family="Trebuchet MS, Segoe UI, sans-serif">
+    <g transform="translate(1404 12)">
+      <rect width="150" height="34" rx="7" fill="#140a0e" stroke="#5b3521" opacity=".95"/>
+      <text x="12" y="13" fill="#9c8b84" font-size="7" letter-spacing="1.4">PÚBLICO</text>
+      <text x="12" y="28" fill="#f4e6ce" font-size="15" font-weight="700">54 / 60</text>
+      <circle cx="132" cy="17" r="3" fill="#7bd6a0"/>
+    </g>
+    <g transform="translate(1564 12)">
+      <rect width="142" height="34" rx="7" fill="#140a0e" stroke="#5b3521" opacity=".95"/>
+      <text x="12" y="13" fill="#9c8b84" font-size="7" letter-spacing="1.4">CALIDAD</text>
+      <text x="12" y="28" fill="#7bd6a0" font-size="15" font-weight="700">68</text>
+      <rect x="52" y="22" width="76" height="4" rx="2" fill="#2a1a16"/>
+      <rect x="52" y="22" width="52" height="4" rx="2" fill="#7bd6a0"/>
+    </g>
+    <g transform="translate(1716 12)">
+      <rect width="156" height="34" rx="7" fill="#140a0e" stroke="#5b3521" opacity=".95"/>
+      <text x="12" y="13" fill="#9c8b84" font-size="7" letter-spacing="1.4">COHERENCIA</text>
+      <text x="12" y="28" fill="#e8bf5a" font-size="15" font-weight="700">74</text>
+      <rect x="52" y="22" width="90" height="4" rx="2" fill="#2a1a16"/>
+      <rect x="52" y="22" width="67" height="4" rx="2" fill="#e8bf5a"/>
+    </g>
+  </g>
+
+  <!-- ======================= STAGE ======================= -->
+  <rect x="34" y="64" width="1852" height="372" rx="12" fill="#170a10" stroke="#5b3521" stroke-width="2"/>
+  <rect x="88" y="82" width="1744" height="334" fill="url(#stageBg)"/>
+  <rect x="248" y="126" width="1424" height="268" fill="url(#backdrop)"/>
+
+  <!-- back wall texture / moon -->
+  <circle cx="1500" cy="190" r="54" fill="#e7cf9d" opacity=".10"/>
+  <circle cx="1500" cy="190" r="38" fill="#f4e3b6" opacity=".10"/>
+  <path d="M 248 320 Q 520 286 720 320 T 1180 312 T 1672 326 L 1672 394 L 248 394 Z" fill="#130a0f" opacity=".8"/>
+
+  <!-- spotlights -->
+  <path d="M 410 100 L 660 405 L 840 405 Z" fill="url(#lightBeam)" opacity="0.1"/>
+  <path d="M 1510 100 L 1280 405 L 1100 405 Z" fill="url(#lightBeam)" opacity="0.085"/>
+  <path d="M 960 100 L 860 405 L 1060 405 Z" fill="url(#lightBeam)" opacity="0.07"/>
+
+  <!-- gazebo -->
+  <g stroke="#5b3b2a" stroke-width="2">
+    <polygon points="500,236 690,176 880,236" fill="#c9a06d"/>
+    <polygon points="518,236 690,188 862,236" fill="#e0bc86"/>
+    <rect x="548" y="238" width="18" height="152" fill="#d3ad78"/>
+    <rect x="642" y="238" width="18" height="152" fill="#d3ad78"/>
+    <rect x="738" y="238" width="18" height="152" fill="#d3ad78"/>
+    <rect x="830" y="238" width="18" height="152" fill="#d3ad78"/>
+    <rect x="540" y="268" width="316" height="8" fill="#b98a5a"/>
+    <rect x="540" y="322" width="316" height="8" fill="#b98a5a"/>
+    <path d="M 548 382 L 848 382" stroke="#8d6444"/>
+    <path d="M 566 292 Q 590 278 614 292 M 678 292 Q 702 278 726 292 M 790 292 Q 814 278 838 292" fill="none" stroke="#f0d39b" opacity=".3"/>
+  </g>
+
+  <!-- cardboard dinosaur -->
+  <g transform="translate(1248 250)">
+    <path d="M 22 116 C 6 100 10 70 34 58 C 58 46 90 55 98 76 C 106 96 94 116 76 122 Z" fill="#b88a58" stroke="#68452d" stroke-width="2"/>
+    <path d="M 76 62 C 92 38 110 26 128 30 C 144 34 148 50 138 60 C 128 70 110 70 100 62" fill="#c79a64" stroke="#68452d" stroke-width="2"/>
+    <path d="M 132 34 L 156 26 L 142 44 Z" fill="#68452d"/>
+    <path d="M 34 58 L 12 26 L 36 38 L 48 12 L 56 42" fill="#b88a58" stroke="#68452d" stroke-width="2"/>
+    <path d="M 22 106 L 4 132 M 62 112 L 56 138 M 88 108 L 100 134" stroke="#68452d" stroke-width="7" stroke-linecap="round"/>
+    <path d="M 34 74 L 72 82 M 28 92 L 80 96" stroke="#8d6444" stroke-width="2" opacity=".8"/>
+    <circle cx="118" cy="38" r="3" fill="#2b1810"/>
+    <path d="M 44 50 L 52 60 L 40 60 Z" fill="#68452d"/>
+  </g>
+
+  <!-- actors -->
+  <g transform="translate(960 268)">
+    <ellipse cx="0" cy="124" rx="30" ry="6" fill="#000" opacity=".4"/>
+    <circle cx="0" cy="18" r="17" fill="#1a0f13"/>
+    <ellipse cx="0" cy="4" rx="24" ry="4" fill="#1a0f13"/>
+    <rect x="-13" y="-9" width="26" height="14" rx="3" fill="#1a0f13"/>
+    <path d="M -22 40 C -30 68 -24 100 -18 124 L 18 124 C 24 100 30 68 22 40 Z" fill="#160b10"/>
+    <path d="M -13 44 L -36 88 M 13 44 L 38 82" stroke="#160b10" stroke-width="8" stroke-linecap="round"/>
+    <path d="M -13 44 L -36 88 M 13 44 L 38 82" stroke="#d8b077" stroke-width="1.2" opacity=".35"/>
+  </g>
+  <g transform="translate(1088 282)">
+    <ellipse cx="0" cy="110" rx="26" ry="5" fill="#000" opacity=".35"/>
+    <circle cx="0" cy="16" r="15" fill="#1a0f13"/>
+    <path d="M -19 36 C -26 60 -22 92 -16 110 L 16 110 C 22 92 26 60 19 36 Z" fill="#160b10"/>
+    <path d="M -11 40 L -30 74 M 11 40 L 28 68" stroke="#160b10" stroke-width="7" stroke-linecap="round"/>
+    <path d="M -11 40 L -30 74 M 11 40 L 28 68" stroke="#e8bf5a" stroke-width="1.2" opacity=".28"/>
+  </g>
+
+  <!-- curtains -->
+  <path d="M 88 82 L 250 82 L 250 416 L 88 416 Z" fill="url(#curtain)"/>
+  <path d="M 1832 82 L 1670 82 L 1670 416 L 1832 416 Z" fill="url(#curtain)"/>
+  <path d="M 88 82 Q 420 120 960 104 Q 1500 120 1832 82 L 1832 150 Q 1500 178 960 164 Q 420 178 88 150 Z" fill="url(#curtainTop)"/>
+  <g stroke="#2d0710" stroke-width="2" opacity=".55" fill="none">
+    <path d="M 132 96 C 150 180 126 280 150 414"/>
+    <path d="M 188 92 C 206 190 184 300 208 414"/>
+    <path d="M 1772 96 C 1754 180 1778 280 1754 414"/>
+    <path d="M 1716 92 C 1698 190 1720 300 1696 414"/>
+  </g>
+  <path d="M 88 82 Q 420 120 960 104 Q 1500 120 1832 82" fill="none" stroke="#d8b077" stroke-width="1.2" opacity=".35"/>
+
+  <!-- hanging act sign -->
+  <g transform="translate(760 110)">
+    <line x1="80" y1="-16" x2="80" y2="0" stroke="#a0744a" stroke-width="1.4"/>
+    <line x1="320" y1="-16" x2="320" y2="0" stroke="#a0744a" stroke-width="1.4"/>
+    <rect width="400" height="42" rx="4" fill="#2a0d15" stroke="#a0744a" stroke-width="1.5"/>
+    <text x="200" y="16" text-anchor="middle" fill="#d8b077" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="8" letter-spacing="2.4">ACTO II · LA FUNCIÓN SIGUE</text>
+    <text x="200" y="32" text-anchor="middle" fill="#f4e6ce" font-family="Georgia, serif" font-size="13" letter-spacing="1.6">EL GAZEBO IMPOSIBLE</text>
+  </g>
+
+  <!-- stage floor / footlights -->
+  <polygon points="204,394 1716,394 1832,436 88,436" fill="url(#stageFloor)"/>
+  <path d="M 204 394 L 1716 394" stroke="#d8b077" stroke-width="1.2" opacity=".35"/>
+  <g fill="#ffe0a0">
+    <circle cx="300" cy="405" r="4.5" filter="url(#glow)" opacity=".85"/><circle cx="420" cy="405" r="4.5" filter="url(#glow)" opacity=".85"/><circle cx="540" cy="405" r="4.5" filter="url(#glow)" opacity=".85"/><circle cx="660" cy="405" r="4.5" filter="url(#glow)" opacity=".85"/><circle cx="780" cy="405" r="4.5" filter="url(#glow)" opacity=".85"/><circle cx="900" cy="405" r="4.5" filter="url(#glow)" opacity=".85"/><circle cx="1020" cy="405" r="4.5" filter="url(#glow)" opacity=".85"/><circle cx="1140" cy="405" r="4.5" filter="url(#glow)" opacity=".85"/><circle cx="1260" cy="405" r="4.5" filter="url(#glow)" opacity=".85"/><circle cx="1380" cy="405" r="4.5" filter="url(#glow)" opacity=".85"/><circle cx="1500" cy="405" r="4.5" filter="url(#glow)" opacity=".85"/><circle cx="1620" cy="405" r="4.5" filter="url(#glow)" opacity=".85"/>
+  </g>
+  <g fill="#fff0c8" opacity=".35">
+    <circle cx="540" cy="210" r="1.6"/><circle cx="600" cy="182" r="1.1"/>
+    <circle cx="700" cy="150" r="1.3"/><circle cx="1180" cy="176" r="1.4"/>
+    <circle cx="1360" cy="220" r="1.2"/><circle cx="1480" cy="154" r="1.1"/>
+  </g>
+
+  <!-- ======================= AUDIENCE ======================= -->
+  <rect x="0" y="436" width="1920" height="390" fill="#0d070a"/>
+  <rect x="0" y="436" width="1920" height="390" fill="url(#roomGlow)" opacity=".4"/>
+  <path d="M 0 436 L 1920 436" stroke="#5b3521" stroke-width="1" opacity=".6"/>
+
+  <!-- side walls and bottom-corner exits -->
+  <g>
+    <polygon points="0,436 88,436 88,790 0,790" fill="#120a0d"/>
+    <polygon points="1832,436 1920,436 1920,790 1832,790" fill="#120a0d"/>
+
+    <g>
+      <ellipse cx="387" cy="820" rx="54" ry="10" fill="#7bd6a0" opacity=".12" filter="url(#glow)"/>
+      <rect x="324" y="736" width="126" height="88" rx="4" fill="#090507" stroke="#4b2a1f" stroke-width="2"/>
+      <rect x="336" y="748" width="102" height="76" rx="3" fill="url(#screen)" stroke="#1e5a3d" stroke-width="1"/>
+      <path d="M 342 786 L 432 786 M 342 800 L 432 800 M 342 814 L 432 814" stroke="#25131a" stroke-width="4" opacity=".9"/>
+      <rect x="348" y="714" width="84" height="20" rx="3" fill="#07130e" stroke="#7bd6a0" stroke-width="1.2"/>
+      <text x="390" y="728" text-anchor="middle" fill="#7bd6a0" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="7" font-weight="700" letter-spacing="1.2">SALIDA</text>
+      <path d="M 390 736 L 385 742 L 395 742 Z" fill="#7bd6a0" opacity=".7"/>
+    </g>
+
+    <g>
+      <ellipse cx="1533" cy="820" rx="54" ry="10" fill="#7bd6a0" opacity=".12" filter="url(#glow)"/>
+      <rect x="1470" y="736" width="126" height="88" rx="4" fill="#090507" stroke="#4b2a1f" stroke-width="2"/>
+      <rect x="1482" y="748" width="102" height="76" rx="3" fill="url(#screen)" stroke="#1e5a3d" stroke-width="1"/>
+      <path d="M 1488 786 L 1578 786 M 1488 800 L 1578 800 M 1488 814 L 1578 814" stroke="#25131a" stroke-width="4" opacity=".9"/>
+      <rect x="1494" y="714" width="84" height="20" rx="3" fill="#07130e" stroke="#7bd6a0" stroke-width="1.2"/>
+      <text x="1536" y="728" text-anchor="middle" fill="#7bd6a0" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="7" font-weight="700" letter-spacing="1.2">SALIDA</text>
+      <path d="M 1536 736 L 1531 742 L 1541 742 Z" fill="#7bd6a0" opacity=".7"/>
+    </g>
+
+    <circle cx="270" cy="610" r="8" fill="#ffcf7c" opacity=".25" filter="url(#glow)"/>
+    <circle cx="1650" cy="610" r="8" fill="#ffcf7c" opacity=".25" filter="url(#glow)"/>
+  </g>
+
+  <!-- side aisles -->
+  <rect x="470" y="500" width="58" height="286" fill="#160b10" opacity=".9"/>
+  <rect x="1405" y="500" width="58" height="286" fill="#160b10" opacity=".9"/>
+  <path d="M 499 500 L 499 786 M 1434 500 L 1434 786" stroke="#2f171c" stroke-width="1" stroke-dasharray="6 10"/>
+
+  <!-- audience heading -->
+  <g font-family="Trebuchet MS, Segoe UI, sans-serif">
+    <text x="64" y="466" fill="#9c8b84" font-size="8" letter-spacing="2.6">PLATEA</text>
+    <text x="64" y="494" fill="#f4e6ce" font-family="Georgia, serif" font-size="24" font-weight="700">54 <tspan fill="#9c8b84" font-size="13">/ 60 ESPECTADORES</tspan></text>
+    <g transform="translate(722 466)" font-size="9" letter-spacing=".8">
+      <circle cx="0" cy="-3" r="5" fill="#7bd6a0"/><text x="11" y="0" fill="#cfbea9">CONTENTO</text>
+      <circle cx="120" cy="-3" r="5" fill="#e8bf5a"/><text x="131" y="0" fill="#cfbea9">SERIO</text>
+      <circle cx="220" cy="-3" r="5" fill="#e35d5d"/><text x="231" y="0" fill="#cfbea9">CRÍTICO</text>
+      <text x="335" y="0" fill="#9c8b84" font-size="8">EL ROJO AVISA; DESPUÉS SE MARCHAN</text>
+    </g>
+    <text x="1856" y="466" text-anchor="end" fill="#e35d5d" font-size="8" letter-spacing="1.4">6 HAN ABANDONADO</text>
+    <text x="1856" y="486" text-anchor="end" fill="#9c8b84" font-size="7" letter-spacing="1.1">LOS MÁS CRÍTICOS, PRIMERO</text>
+  </g>
+
+  <!-- rows -->
+  <g transform="translate(546 520) scale(0.78)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(638 520) scale(0.78)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(730 520) scale(0.78)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(822 520) scale(0.78)"><use href="#seat"/><use href="#seated" color="#e8bf5a"/><use href="#seatFront"/></g><g transform="translate(914 520) scale(0.78)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(1006 520) scale(0.78)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(1098 520) scale(0.78)"><use href="#seat"/><use href="#seated" color="#e8bf5a"/><use href="#seatFront"/></g><g transform="translate(1190 520) scale(0.78)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(1282 520) scale(0.78)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(1374 520) scale(0.78)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(546 562) scale(0.84)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(638 562) scale(0.84)"><use href="#seat"/><use href="#seated" color="#e8bf5a"/><use href="#seatFront"/></g><g transform="translate(730 562) scale(0.84)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(822 562) scale(0.84)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(914 562) scale(0.84)"><use href="#seat"/><use href="#seated" color="#e8bf5a"/><use href="#seatFront"/></g><g transform="translate(1006 562) scale(0.84)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(1098 562) scale(0.84)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(1190 562) scale(0.84)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(1282 562) scale(0.84)"><use href="#seat"/><use href="#seated" color="#e8bf5a"/><use href="#seatFront"/></g><g transform="translate(1374 562) scale(0.84)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(546 608) scale(0.9)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(638 608) scale(0.9)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(730 608) scale(0.9)"><use href="#seat"/><use href="#seated" color="#e8bf5a"/><use href="#seatFront"/></g><g transform="translate(822 608) scale(0.9)"><use href="#seat"/><use href="#seated" color="#e35d5d"/><circle cx="0" cy="-34" r="20" fill="none" stroke="#e35d5d" stroke-width="1.6" opacity=".30"/><circle cx="0" cy="-34" r="27" fill="none" stroke="#e35d5d" stroke-width="1" opacity=".12"/><use href="#seatFront"/></g><g transform="translate(914 608) scale(0.9)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(1006 608) scale(0.9)"><use href="#seat"/><use href="#seated" color="#e8bf5a"/><use href="#seatFront"/></g><g transform="translate(1098 608) scale(0.9)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(1190 608) scale(0.9)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(1282 608) scale(0.9)"><use href="#seat"/><use href="#seated" color="#e8bf5a"/><use href="#seatFront"/></g><g transform="translate(1374 608) scale(0.9)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(546 658) scale(0.96)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(638 658) scale(0.96)"><use href="#seat"/><use href="#seated" color="#e8bf5a"/><use href="#seatFront"/></g><g transform="translate(730 658) scale(0.96)"><use href="#seat"/><use href="#seated" color="#e8bf5a"/><use href="#seatFront"/></g><g transform="translate(822 658) scale(0.96)"><use href="#seat"/><use href="#seated" color="#e35d5d"/><circle cx="0" cy="-34" r="20" fill="none" stroke="#e35d5d" stroke-width="1.6" opacity=".30"/><circle cx="0" cy="-34" r="27" fill="none" stroke="#e35d5d" stroke-width="1" opacity=".12"/><use href="#seatFront"/></g><g transform="translate(914 658) scale(0.96)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(1006 658) scale(0.96)"><use href="#seat"/><use href="#seated" color="#e8bf5a"/><use href="#seatFront"/></g><g transform="translate(1098 658) scale(0.96)"><use href="#seat"/><use href="#seated" color="#e35d5d"/><circle cx="0" cy="-34" r="20" fill="none" stroke="#e35d5d" stroke-width="1.6" opacity=".30"/><circle cx="0" cy="-34" r="27" fill="none" stroke="#e35d5d" stroke-width="1" opacity=".12"/><use href="#seatFront"/></g><g transform="translate(1190 658) scale(0.96)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(1282 658) scale(0.96)"><use href="#seat"/><rect x="-26" y="-34" width="52" height="40" rx="7" fill="#10070b" opacity=".66"/><path d="M -18 -10 L 18 6" stroke="#3c0c16" stroke-width="2" opacity=".4"/><use href="#seatFront" opacity=".72"/></g><g transform="translate(1374 658) scale(0.96)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(546 712) scale(1.02)"><use href="#seat"/><use href="#seated" color="#e8bf5a"/><use href="#seatFront"/></g><g transform="translate(638 712) scale(1.02)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(730 712) scale(1.02)"><use href="#seat"/><use href="#seated" color="#e35d5d"/><circle cx="0" cy="-34" r="20" fill="none" stroke="#e35d5d" stroke-width="1.6" opacity=".30"/><circle cx="0" cy="-34" r="27" fill="none" stroke="#e35d5d" stroke-width="1" opacity=".12"/><use href="#seatFront"/></g><g transform="translate(822 712) scale(1.02)"><use href="#seat"/><rect x="-26" y="-34" width="52" height="40" rx="7" fill="#10070b" opacity=".66"/><path d="M -18 -10 L 18 6" stroke="#3c0c16" stroke-width="2" opacity=".4"/><use href="#seatFront" opacity=".72"/></g><g transform="translate(914 712) scale(1.02)"><use href="#seat"/><use href="#seated" color="#e35d5d"/><circle cx="0" cy="-34" r="20" fill="none" stroke="#e35d5d" stroke-width="1.6" opacity=".30"/><circle cx="0" cy="-34" r="27" fill="none" stroke="#e35d5d" stroke-width="1" opacity=".12"/><use href="#seatFront"/></g><g transform="translate(1006 712) scale(1.02)"><use href="#seat"/><use href="#seated" color="#7bd6a0"/><use href="#seatFront"/></g><g transform="translate(1098 712) scale(1.02)"><use href="#seat"/><rect x="-26" y="-34" width="52" height="40" rx="7" fill="#10070b" opacity=".66"/><path d="M -18 -10 L 18 6" stroke="#3c0c16" stroke-width="2" opacity=".4"/><use href="#seatFront" opacity=".72"/></g><g transform="translate(1190 712) scale(1.02)"><use href="#seat"/><use href="#seated" color="#e8bf5a"/><use href="#seatFront"/></g><g transform="translate(1282 712) scale(1.02)"><use href="#seat"/><use href="#seated" color="#e35d5d"/><circle cx="0" cy="-34" r="20" fill="none" stroke="#e35d5d" stroke-width="1.6" opacity=".30"/><circle cx="0" cy="-34" r="27" fill="none" stroke="#e35d5d" stroke-width="1" opacity=".12"/><use href="#seatFront"/></g><g transform="translate(1374 712) scale(1.02)"><use href="#seat"/><rect x="-26" y="-34" width="52" height="40" rx="7" fill="#10070b" opacity=".66"/><path d="M -18 -10 L 18 6" stroke="#3c0c16" stroke-width="2" opacity=".4"/><use href="#seatFront" opacity=".72"/></g><g transform="translate(546 770) scale(1.08)"><use href="#seat"/><use href="#seated" color="#e8bf5a"/><use href="#seatFront"/></g><g transform="translate(638 770) scale(1.08)"><use href="#seat"/><use href="#seated" color="#e35d5d"/><circle cx="0" cy="-34" r="20" fill="none" stroke="#e35d5d" stroke-width="1.6" opacity=".30"/><circle cx="0" cy="-34" r="27" fill="none" stroke="#e35d5d" stroke-width="1" opacity=".12"/><use href="#seatFront"/></g><g transform="translate(730 770) scale(1.08)"><use href="#seat"/><rect x="-26" y="-34" width="52" height="40" rx="7" fill="#10070b" opacity=".66"/><path d="M -18 -10 L 18 6" stroke="#3c0c16" stroke-width="2" opacity=".4"/><use href="#seatFront" opacity=".72"/></g><g transform="translate(822 770) scale(1.08)"><use href="#seat"/><use href="#seated" color="#e35d5d"/><circle cx="0" cy="-34" r="20" fill="none" stroke="#e35d5d" stroke-width="1.6" opacity=".30"/><circle cx="0" cy="-34" r="27" fill="none" stroke="#e35d5d" stroke-width="1" opacity=".12"/><use href="#seatFront"/></g><g transform="translate(914 770) scale(1.08)"><use href="#seat"/><use href="#seated" color="#e8bf5a"/><use href="#seatFront"/></g><g transform="translate(1006 770) scale(1.08)"><use href="#seat"/><rect x="-26" y="-34" width="52" height="40" rx="7" fill="#10070b" opacity=".66"/><path d="M -18 -10 L 18 6" stroke="#3c0c16" stroke-width="2" opacity=".4"/><use href="#seatFront" opacity=".72"/></g><g transform="translate(1098 770) scale(1.08)"><use href="#seat"/><use href="#seated" color="#e35d5d"/><circle cx="0" cy="-34" r="20" fill="none" stroke="#e35d5d" stroke-width="1.6" opacity=".30"/><circle cx="0" cy="-34" r="27" fill="none" stroke="#e35d5d" stroke-width="1" opacity=".12"/><use href="#seatFront"/></g><g transform="translate(1190 770) scale(1.08)"><use href="#seat"/><rect x="-26" y="-34" width="52" height="40" rx="7" fill="#10070b" opacity=".66"/><path d="M -18 -10 L 18 6" stroke="#3c0c16" stroke-width="2" opacity=".4"/><use href="#seatFront" opacity=".72"/></g><g transform="translate(1282 770) scale(1.08)"><use href="#seat"/><use href="#seated" color="#e8bf5a"/><use href="#seatFront"/></g><g transform="translate(1374 770) scale(1.08)"><use href="#seat"/><rect x="-26" y="-34" width="52" height="40" rx="7" fill="#10070b" opacity=".66"/><path d="M -18 -10 L 18 6" stroke="#3c0c16" stroke-width="2" opacity=".4"/><use href="#seatFront" opacity=".72"/></g>
+
+  <!-- leaving spectators -->
+  
+  <path d="M 486 690 C 520 668 540 650 560 636" fill="none" stroke="#e35d5d" stroke-width="2" stroke-dasharray="3 7" opacity=".25"/>
+  <g stroke="#e35d5d" stroke-width="2.2" stroke-linecap="round" opacity=".32">
+    <line x1="452" y1="628" x2="474" y2="634"/>
+    <line x1="446" y1="646" x2="470" y2="650"/>
+    <line x1="452" y1="664" x2="476" y2="666"/>
+  </g>
+  <g transform="translate(492 646) scale(0.96) rotate(-8)">
+    <use href="#spectator" color="#e35d5d"/>
+    <circle cx="0" cy="-34" r="20" fill="none" stroke="#e35d5d" stroke-width="1.6" opacity=".30"/>
+       <circle cx="0" cy="-34" r="27" fill="none" stroke="#e35d5d" stroke-width="1" opacity=".12"/>
+  </g>
+  <path d="M 1440 760 C 1405 742 1380 732 1350 724" fill="none" stroke="#e35d5d" stroke-width="2" stroke-dasharray="3 7" opacity=".25"/>
+  <g stroke="#e35d5d" stroke-width="2.2" stroke-linecap="round" opacity=".32">
+    <line x1="1452" y1="706" x2="1476" y2="700"/>
+    <line x1="1456" y1="724" x2="1482" y2="720"/>
+    <line x1="1452" y1="742" x2="1476" y2="740"/>
+  </g>
+  <g transform="translate(1434 720) scale(1.02) rotate(7)">
+    <use href="#spectator" color="#e35d5d"/>
+    <circle cx="0" cy="-34" r="20" fill="none" stroke="#e35d5d" stroke-width="1.6" opacity=".30"/>
+       <circle cx="0" cy="-34" r="27" fill="none" stroke="#e35d5d" stroke-width="1" opacity=".12"/>
+  </g>
+
+
+  <!-- floor line before desk -->
+  <path d="M 0 790 L 1920 790" stroke="#3c0c16" stroke-width="1.2" opacity=".8"/>
+
+  <!-- ======================= DESK ======================= -->
+  <path d="M 52 824 L 1868 824 L 1920 1080 L 0 1080 Z" fill="url(#deskTop)" stroke="#5b3521" stroke-width="2"/>
+  <path d="M 52 824 L 1868 824" stroke="#e0b47a" stroke-width="1.4" opacity=".45"/>
+  <path d="M 120 850 L 1800 850 L 1840 1040 L 80 1040 Z" fill="none" stroke="#6b432b" stroke-width="1" opacity=".35"/>
+
+  <!-- monitor -->
+  <g filter="url(#softShadow)">
+    <rect x="724" y="834" width="472" height="174" rx="12" fill="#0e0907" stroke="#6b432b" stroke-width="2"/>
+    <rect x="738" y="848" width="444" height="146" rx="6" fill="url(#screen)" stroke="#1e5a3d"/>
+    <rect x="738" y="848" width="444" height="146" rx="6" fill="url(#scanlines)"/>
+    <text x="756" y="870" fill="#7fbf98" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="7.5" letter-spacing="2">MONITOR DE CABINA</text>
+    <circle cx="1164" cy="864" r="3" fill="#7bd6a0" filter="url(#glow)"/>
+
+    <text x="756" y="896" fill="#7fbf98" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="7.5" letter-spacing="1.4">CALIDAD</text>
+    <text x="756" y="932" fill="#d9ffe8" font-family="Georgia, serif" font-size="30" font-weight="700">68</text>
+    <rect x="756" y="940" width="170" height="5" rx="2.5" fill="#123526"/>
+    <rect x="756" y="940" width="116" height="5" rx="2.5" fill="#7bd6a0"/>
+
+    <text x="960" y="896" fill="#b8a26a" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="7.5" letter-spacing="1.4">COHERENCIA</text>
+    <text x="960" y="932" fill="#ffe8ad" font-family="Georgia, serif" font-size="30" font-weight="700">74</text>
+    <rect x="960" y="940" width="196" height="5" rx="2.5" fill="#3a2c13"/>
+    <rect x="960" y="940" width="145" height="5" rx="2.5" fill="#e8bf5a"/>
+
+    <line x1="756" y1="950" x2="1156" y2="950" stroke="#2b5a42" stroke-width="1" opacity=".7"/>
+    <text x="756" y="965" fill="#7fbf98" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="7" letter-spacing="1.2">ESPECTADOR 23</text>
+    <text x="756" y="979" fill="#e8bf5a" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="7.5" font-weight="700" letter-spacing=".8">CRITICIDAD ALTA</text>
+    <text x="960" y="979" fill="#e35d5d" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="7.5" font-weight="700" letter-spacing=".8">SATISFACCIÓN 28%</text>
+    <text x="756" y="991" fill="#5f8f75" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="6.5" letter-spacing=".5">Selecciona una butaca para inspeccionar.</text>
+  </g>
+
+  <!-- left panel: light -->
+  <g filter="url(#softShadow)">
+    <rect x="186" y="848" width="366" height="174" rx="12" fill="url(#panelMetal)" stroke="#6b432b" stroke-width="2"/>
+    <text x="208" y="870" fill="#d8b077" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="9" font-weight="700" letter-spacing="2.2">LUZ</text>
+    <text x="208" y="883" fill="#9c8b84" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="6.5" letter-spacing="1.2">CANAL 01 · ESCENA</text>
+    <g stroke="#5a3824" stroke-width="3" stroke-linecap="round">
+      <line x1="270" y1="900" x2="270" y2="980"/>
+      <line x1="350" y1="900" x2="350" y2="980"/>
+      <line x1="430" y1="900" x2="430" y2="980"/>
+    </g>
+    <g>
+      <rect x="254" y="922" width="32" height="14" rx="4" fill="#d8b077" stroke="#fff0c8" stroke-width="1"/>
+      <rect x="334" y="946" width="32" height="14" rx="4" fill="#8b6a4a" stroke="#d8b077" stroke-width="1" opacity=".7"/>
+      <rect x="414" y="934" width="32" height="14" rx="4" fill="#8b6a4a" stroke="#d8b077" stroke-width="1" opacity=".7"/>
+    </g>
+    <g fill="#9c8b84" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="7" text-anchor="middle" letter-spacing="1">
+      <text x="270" y="1002">CÁLIDA</text>
+      <text x="350" y="1002">FRÍA</text>
+      <text x="430" y="1002">ROJA</text>
+    </g>
+    <circle cx="520" cy="864" r="3" fill="#d8b077" filter="url(#glow)"/>
+  </g>
+
+  <!-- right panel: sound -->
+  <g filter="url(#softShadow)">
+    <rect x="1368" y="848" width="366" height="174" rx="12" fill="url(#panelMetal)" stroke="#6b432b" stroke-width="2"/>
+    <text x="1390" y="870" fill="#d8b077" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="9" font-weight="700" letter-spacing="2.2">SONIDO</text>
+    <text x="1390" y="883" fill="#9c8b84" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="6.5" letter-spacing="1.2">CANAL 02 · SALA</text>
+    <g>
+      
+        <circle cx="1452" cy="930" r="23" fill="#1b0f0b" stroke="#8b6a4a" stroke-width="2"/>
+        <circle cx="1452" cy="930" r="15" fill="#2b1a12" stroke="#5a3824" stroke-width="1"/>
+        <line x1="1452" y1="930" x2="1459" y2="919" stroke="#f0d39b" stroke-width="2.4" stroke-linecap="round"/>
+      
+        <circle cx="1540" cy="930" r="23" fill="#1b0f0b" stroke="#8b6a4a" stroke-width="2"/>
+        <circle cx="1540" cy="930" r="15" fill="#2b1a12" stroke="#5a3824" stroke-width="1"/>
+        <line x1="1540" y1="930" x2="1536" y2="917" stroke="#f0d39b" stroke-width="2.4" stroke-linecap="round"/>
+      
+        <circle cx="1628" cy="930" r="23" fill="#1b0f0b" stroke="#8b6a4a" stroke-width="2"/>
+        <circle cx="1628" cy="930" r="15" fill="#2b1a12" stroke="#5a3824" stroke-width="1"/>
+        <line x1="1628" y1="930" x2="1637" y2="922" stroke="#f0d39b" stroke-width="2.4" stroke-linecap="round"/>
+      
+    </g>
+    <g fill="#9c8b84" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="7" text-anchor="middle" letter-spacing="1">
+      <text x="1452" y="1002">MÚSICA</text>
+      <text x="1540" y="1002">EFECTOS</text>
+      <text x="1628" y="1002">VOZ</text>
+    </g>
+    <g transform="translate(1440 968)">
+      <rect x="0" y="0" width="10" height="12" rx="2" fill="#7bd6a0" opacity="0.75"/><rect x="18" y="-3" width="10" height="12" rx="2" fill="#7bd6a0" opacity="0.75"/><rect x="36" y="-6" width="10" height="12" rx="2" fill="#7bd6a0" opacity="0.75"/><rect x="54" y="0" width="10" height="12" rx="2" fill="#7bd6a0" opacity="0.75"/><rect x="72" y="-3" width="10" height="12" rx="2" fill="#7bd6a0" opacity="0.75"/><rect x="90" y="-6" width="10" height="12" rx="2" fill="#2a1a16" opacity="0.6"/><rect x="108" y="0" width="10" height="12" rx="2" fill="#2a1a16" opacity="0.6"/><rect x="126" y="-3" width="10" height="12" rx="2" fill="#2a1a16" opacity="0.6"/>
+    </g>
+    <circle cx="1706" cy="864" r="3" fill="#7bd6a0" filter="url(#glow)"/>
+  </g>
+
+  <!-- object tray -->
+  <g filter="url(#softShadow)">
+    <rect x="690" y="1018" width="548" height="50" rx="9" fill="#180d09" stroke="#6b432b" stroke-width="2"/>
+    <text x="706" y="1013" fill="#d8b077" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="8" font-weight="700" letter-spacing="2">OBJETO · CANAL 03</text>
+    <g transform="translate(742 1043)">
+      <circle r="15" fill="#2a1811" stroke="#8b6a4a"/>
+      <path d="M 0 8 L 0 -6 M 0 -6 C -10 -14 -12 -2 0 0 M 0 -6 C 10 -14 12 -2 0 0 M -7 2 C -14 -2 -12 8 0 4" fill="none" stroke="#f0d39b" stroke-width="2"/>
+    </g>
+    <g transform="translate(956 1042)">
+      <circle r="15" fill="#2a1811" stroke="#8b6a4a"/>
+      <ellipse cx="-2" cy="2" rx="8" ry="7" fill="#e8bf5a"/>
+      <circle cx="6" cy="-5" r="4" fill="#e8bf5a"/>
+      <path d="M 10 -5 L 15 -3 L 10 -1 Z" fill="#f0d39b"/>
+    </g>
+    <g transform="translate(1170 1042)">
+      <circle r="17" fill="#1b2a20" stroke="#7bd6a0" stroke-width="1.5" filter="url(#glow)"/>
+      <ellipse cx="0" cy="3" rx="11" ry="4" fill="#7bd6a0" opacity=".8"/>
+      <path d="M -7 2 C -7 -7 7 -7 7 2 Z" fill="#7bd6a0" opacity=".8"/>
+      <circle cx="-4" cy="3" r="1.2" fill="#07130e"/><circle cx="4" cy="3" r="1.2" fill="#07130e"/>
+    </g>
+    <text x="1204" y="1047" fill="#9c8b84" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="7" letter-spacing="1">OVNI</text>
+  </g>
+
+  <!-- improvisar lever -->
+  <g filter="url(#softShadow)">
+    <ellipse cx="1288" cy="1022" rx="48" ry="15" fill="#0d0806" stroke="#6b432b" stroke-width="2"/>
+    <line x1="1288" y1="1016" x2="1312" y2="946" stroke="#8b6a4a" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="1312" cy="946" r="19" fill="#d8b077" stroke="#fff0c8" stroke-width="2" filter="url(#glow)"/>
+    <circle cx="1307" cy="940" r="6" fill="#fff4cf" opacity=".55"/>
+    <text x="1288" y="1062" text-anchor="middle" fill="#f0d39b" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="8" font-weight="700" letter-spacing="1.6">IMPROVISAR</text>
+  </g>
+
+  <!-- emergency curtain button -->
+  <g filter="url(#softShadow)">
+    <ellipse cx="620" cy="1028" rx="36" ry="12" fill="#0d0806" stroke="#6b432b" stroke-width="2"/>
+    <circle cx="620" cy="1018" r="24" fill="#7d1d2d" stroke="#e35d5d" stroke-width="2"/>
+    <circle cx="613" cy="1010" r="7" fill="#ff9a9a" opacity=".45"/>
+    <text x="620" y="1062" text-anchor="middle" fill="#e35d5d" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="8" font-weight="700" letter-spacing="1.4">TELÓN</text>
+  </g>
+
+  <!-- coffee -->
+  <g transform="translate(112 1004)" opacity=".9">
+    <path d="M -14 0 L 14 0 L 11 34 L -11 34 Z" fill="#3a2118" stroke="#8b6a4a" stroke-width="1.5"/>
+    <path d="M 14 8 C 28 6 28 24 14 22" fill="none" stroke="#8b6a4a" stroke-width="2"/>
+    <path d="M -6 -6 C -10 -14 0 -16 -4 -24 M 6 -6 C 2 -14 12 -16 8 -24" fill="none" stroke="#d8b077" stroke-width="1.2" opacity=".25"/>
+  </g>
+
+  <!-- desk plaque -->
+  <text x="960" y="1078" text-anchor="middle" fill="#7a5d48" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="6.5" letter-spacing="2">COMPAÑÍA DE LA VIGA CAÍDA · CABINA DE LUCES</text>
+</svg>

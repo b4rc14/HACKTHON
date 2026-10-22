@@ -1,0 +1,34 @@
+.theater-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+}
+
+.stage-zone {
+  min-width: 0;
+}
+
+.stage-zone .stage-shell {
+  width: 100%;
+}
+
+.stage-zone .stage-scene {
+  min-height: 0;
+  height: clamp(220px, 30vh, 340px);
+  aspect-ratio: auto;
+}
+
+.audience-theater {
+  border-radius: 10px;
+}
+
+.desk-zone {
+  margin-top: 2px;
+}
+
+@media (max-width: 760px) {
+  .stage-zone .stage-scene {
+    height: 260px;
+  }
+}

@@ -15,8 +15,8 @@ Guía para trabajar en paralelo después del MVP. La regla principal:
 | Motor narrativo | `src/game/narrativeEngine.js`, `initialState.js` | Diseño de mecánicas | Puntuación de género, coherencia, títulos |
 | Público y crisis | `src/game/audienceEngine.js`, tests de motor | Sistemas / balance | Deltas, umbrales, reacciones, protocolos |
 | Orquestación | `src/game/gameEngine.js`, `gameReducer.js` | Arquitectura / QA | Flujo de actos, finales, demo |
-| Escenario y arte | `src/components/StageView.jsx`, `AudienceView.jsx`, `stage.css` | Arte / frontend | SVG, animaciones, props visuales |
-| Cabina y UI | `ControlPanel.jsx`, `StatusPanel.jsx`, `CrisisPanel.jsx`, `HistoryPanel.jsx`, `controls.css` | UI / frontend | Layout, estilos, accesibilidad |
+| Escenario y arte | `src/components/StageView.jsx`, `AudienceTheater.jsx`, `audience.css`, `stage.css` | Arte / frontend | SVG, animaciones, props visuales |
+| Cabina y UI | `DeskPanel.jsx`, `CrisisPanel.jsx`, `HistoryPanel.jsx`, `desk.css`, `layout.css` | UI / frontend | Layout, estilos, accesibilidad |
 | Pantallas | `TitleScreen.jsx`, `EndingScreen.jsx`, `global.css` | UI / presentación | Portada, cartel, export SVG |
 | Demo/QA | `DemoPanel.jsx`, `scripts/simulate.mjs`, tests | QA | Herramientas de prueba |
 | Documentación | `README.md`, `TEAM_GUIDE.md` | Cualquiera | Mantener contratos al día |
@@ -69,11 +69,14 @@ El estado inicial está en `src/game/initialState.js`. Campos que otros módulos
   timer, timerMax, timerRunning, nextTimerBonus,
   selections: { lighting, sound, object },
   audience: {
-    groups: {
-      romantics: { count, satisfaction, boredom, patience, reactions, walkouts, ... },
-      chaos: { ... },
-      critics: { ... }
-    },
+    people: [
+      {
+        id, row, col, seat,
+        criticality, satisfaction, patience, boredom,
+        state: 'seated' | 'leaving' | 'gone',
+        exitSide, bias
+      }
+    ],
     initialTotal, discontent,
     lastReaction, reactionHistory,
     ovation, bisRequested, walkouts
@@ -147,10 +150,10 @@ Todas se lanzan con `dispatch({ type, ...payload })`:
 
 No debe llamar a dispatch. Para añadir arte, usad `selections`, `incident.id`, `result.dominantGenre`, `lastReaction.type` y las clases de fase.
 
-### `ControlPanel`
+### `DeskControls`
 
 ```jsx
-<ControlPanel
+<DeskControls
   selections={...}
   onSelect={(kind, id) => ...}
   onPreview={(kind, control) => ...}
@@ -158,12 +161,24 @@ No debe llamar a dispatch. Para añadir arte, usad `selections`, `incident.id`, 
   onClear={() => ...}
   active={phase === 'incident'}
   phase={phase}
-  fallbackGenre={dominantGenre}
   timer={timer}
 />
 ```
 
 `CONTROLS` y `CONTROL_GROUPS` salen de `storyData.js`. Si añadís un control, añadid también su estilo de color y comprobad la inclinación.
+
+### `AudienceTheater`
+
+```jsx
+<AudienceTheater
+  people={state.audience.people}
+  stats={stats}
+  phase={state.phase}
+  onGone={(personId) => dispatch({ type: 'PERSON_GONE', personId })}
+/>
+```
+
+No calcula reglas: pinta cada persona, su color de satisfacción y la animación de salida. `onGone` solo se llama al terminar la animación; el motor ya marcó a la persona como `leaving`.
 
 ### `CrisisPanel`
 
@@ -252,7 +267,7 @@ En `CONTROLS`:
 }
 ```
 
-No hace falta tocar React: `ControlPanel` recorre los arrays. Revisad que los textos quepan en la tarjeta.
+No hace falta tocar React: `DeskControls` recorre los arrays. Revisad que los textos quepan en la tarjeta.
 
 ---
 
@@ -261,14 +276,14 @@ No hace falta tocar React: `ControlPanel` recorre los arrays. Revisad que los te
 1. Añade la entrada en `REACTION_META` (`storyData.js`): `id`, `label`, `icon`, `tone`, `effect`.
 2. Añade la causa y el umbral en `determineReaction` (`audienceEngine.js`).
 3. Añade sus consecuencias en `applyReactionEffects` (satisfacción, trust, caos, timer, recursos, abandono...).
-4. Añade el marcador visual en `AudienceView.jsx` (`reactionMarks`) y, si toca escenario, en `StageView.jsx` (`ReactionFx`).
+4. Añade el marcador visual en `AudienceTheater.jsx` y, si toca escenario, en `StageView.jsx` (`ReactionFx`).
 5. Si la reacción debe activar crisis, añadid el tipo en `determineCrisis`.
 6. Comprobad que `REACTION_META[type]` existe siempre antes de llamar a `applyReactionEffects`; si no, `reactionEntry` fallaría.
 
 ### Cambiar umbrales / dificultad
 
-- Preferencias por grupo y deltas base: `calculateGroupDeltas`.
-- Aburrimiento, paciencia y descontento: `applyNarrativeToAudience`.
+- Calidad global de la escena: `qualityFromEvaluation` en `audienceModel.js`.
+- Satisfacción individual, paciencia y abandonos: `applyQualityToPeople` y `applyNarrativeToAudience`.
 - Qué reacción sale: `determineReaction`.
 - Efectos de reacción: `applyReactionEffects`.
 - Cuándo hay crisis: `determineCrisis`.
@@ -310,8 +325,8 @@ Sugerencia para 5 personas:
 
 1. **Narrativa** trabaja en `storyData.js` y textos de `narrativeEngine` (sin tocar el resto del motor).
 2. **Balance** trabaja en `audienceEngine.js` + tests + `scripts/simulate.mjs`.
-3. **Arte/escenario** trabaja en `StageView.jsx`, `AudienceView.jsx`, `stage.css`.
-4. **UI/cabina** trabaja en `ControlPanel.jsx`, `StatusPanel.jsx`, `CrisisPanel.jsx`, `HistoryPanel.jsx`, `controls.css`.
+3. **Arte/escenario** trabaja en `StageView.jsx`, `AudienceTheater.jsx`, `stage.css` y `audience.css`.
+4. **UI/cabina** trabaja en `DeskPanel.jsx`, `CrisisPanel.jsx`, `HistoryPanel.jsx`, `desk.css` y `layout.css`.
 5. **QA/orquestación** toca `gameEngine.js`, `gameReducer.js`, `DemoPanel.jsx`, `README`/`TEAM_GUIDE`.
 
 Para evitar choques:
@@ -329,8 +344,8 @@ Todas parten del mismo commit de `main`:
 |---|---|---|
 | `feature/narrativa-contenido` | Nuevos actos, objetos, diálogos, títulos y callbacks | `storyData.js`, textos de `narrativeEngine.js`, `IncidentOverlay.jsx`, `EndingScreen.jsx` |
 | `feature/publico-balance` | Satisfacción, reacciones, crisis, dificultad y finales | `audienceEngine.js`, `gameEngine.js`, `scripts/simulate.mjs`, tests |
-| `feature/escenario-animacion` | SVGs, personajes, props, luces y animaciones | `StageView.jsx`, `AudienceView.jsx`, `stage.css` |
-| `feature/ui-cabina` | Cabina, paneles, historial, accesibilidad y estilos | `ControlPanel.jsx`, `CrisisPanel.jsx`, `StatusPanel.jsx`, `HistoryPanel.jsx`, `controls.css` |
+| `feature/escenario-animacion` | SVGs, personajes, props, luces y animaciones | `StageView.jsx`, `AudienceTheater.jsx`, `stage.css`, `audience.css` |
+| `feature/ui-cabina` | Cabina, paneles, historial, accesibilidad y estilos | `DeskPanel.jsx`, `CrisisPanel.jsx`, `HistoryPanel.jsx`, `desk.css`, `layout.css` |
 
 Crear una rama nueva a partir de `main`:
 

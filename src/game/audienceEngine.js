@@ -1,182 +1,56 @@
+import { CRISIS_ACTIONS, CRISIS_TYPES, REACTION_META } from './storyData.js';
+import { clamp, formatSigned } from './utils.js';
 import {
-  CRISIS_ACTIONS,
-  CRISIS_TYPES,
-  REACTION_META,
-} from './storyData.js';
-import { clamp, formatSigned, removeSpectators, sum, weightedAverage } from './utils.js';
+  applyQualityToPeople,
+  getAudienceStats,
+  markLowestLeaving,
+  markPersonGone,
+  qualityFromEvaluation,
+} from './audienceModel.js';
 
-const GROUP_IDS = ['romantics', 'chaos', 'critics'];
-
-export const getAudienceStats = (audience) => {
-  const groups = GROUP_IDS.map((id) => audience.groups[id]);
-  const total = sum(groups.map((group) => group.count));
-  const weightFor = (group) => (total > 0 ? group.count : group.share);
-  const averageSatisfaction = weightedAverage(
-    groups.map((group) => ({ value: group.satisfaction, weight: weightFor(group) })),
-  );
-  const averageBoredom = weightedAverage(
-    groups.map((group) => ({ value: group.boredom, weight: weightFor(group) })),
-  );
-  const averagePatience = weightedAverage(
-    groups.map((group) => ({ value: group.patience, weight: weightFor(group) })),
-  );
-  const lowestGroup = [...groups].sort(
-    (a, b) => a.satisfaction - b.satisfaction || a.patience - b.patience,
-  )[0];
-  const satisfactions = groups.map((group) => group.satisfaction);
-  return {
-    groups,
-    total,
-    averageSatisfaction,
-    averageBoredom,
-    averagePatience,
-    lowestGroup,
-    spread: Math.max(...satisfactions) - Math.min(...satisfactions),
-  };
-};
-
-const cloneGroups = (groups) =>
-  Object.fromEntries(
-    Object.entries(groups).map(([id, group]) => [
-      id,
-      { ...group, reactions: [...(group.reactions || [])] },
-    ]),
-  );
-
-const clampDeltas = (deltas) =>
-  Object.fromEntries(
-    GROUP_IDS.map((id) => [id, Math.round(clamp(deltas[id] || 0, -32, 26))]),
-  );
-
-export const calculateGroupDeltas = (state, evaluation) => {
-  const genreBase = {
-    romance: { romantics: 7, chaos: -4, critics: 0 },
-    comedy: { romantics: -3, chaos: 9, critics: -2 },
-    scifi: { romantics: -5, chaos: 6, critics: 2 },
-  }[evaluation.dominantGenre];
-
-  const deltas = { ...genreBase };
-  const coherence = evaluation.newCoherence;
-
-  if (coherence >= 72) {
-    deltas.romantics += 2;
-    deltas.critics += 4;
-  } else if (coherence >= 58) {
-    deltas.romantics += 1;
-    deltas.critics += 2;
-  } else if (coherence >= 45) {
-    deltas.romantics -= 1;
-    deltas.critics -= 2;
-  } else if (coherence >= 32) {
-    deltas.romantics -= 3;
-    deltas.critics -= 6;
-  } else {
-    deltas.romantics -= 6;
-    deltas.critics -= 10;
-  }
-
-  const tags = new Set(evaluation.tags);
-  if (['sincere', 'warm', 'music', 'romantic-token', 'organic'].some((tag) => tags.has(tag))) {
-    deltas.romantics += 2;
-  }
-  if (['absurd', 'animal', 'slapstick', 'pink', 'noise'].some((tag) => tags.has(tag))) {
-    deltas.chaos += 3;
-    deltas.romantics -= 2;
-  }
-  if (['alien', 'space', 'tech', 'weird'].some((tag) => tags.has(tag))) {
-    deltas.chaos += 2;
-    deltas.critics += 1;
-  }
-
-  if (evaluation.reusedTags.length) {
-    deltas.critics += 3;
-    deltas.romantics += 1;
-    deltas.chaos += 1;
-  }
-  deltas.critics += Math.min(3, Math.ceil(evaluation.novelTags.length * 1.1));
-  deltas.chaos += Math.min(2, Math.floor(evaluation.novelTags.length * 0.7));
-
-  if (evaluation.allDifferent) {
-    deltas.chaos += 3;
-    deltas.critics += 2;
-    deltas.romantics -= 2;
-  }
-
-  if (evaluation.genreChanged && evaluation.coherenceDelta < -5) {
-    deltas.critics -= 5;
-    deltas.romantics -= 3;
-    deltas.chaos += 2;
-  }
-
-  if (evaluation.repeatedCombo) {
-    deltas.romantics -= 8;
-    deltas.chaos -= 8;
-    deltas.critics -= 12;
-  } else if (evaluation.repeatedObject) {
-    deltas.romantics -= 2;
-    deltas.chaos -= 2;
-    deltas.critics -= 2;
-  }
-
-  if (evaluation.timedOut) {
-    deltas.romantics -= 6;
-    deltas.chaos -= 6;
-    deltas.critics -= 9;
-  }
-
-  if (state.actors.trust < 35) {
-    deltas.romantics -= 2;
-    deltas.critics -= 2;
-  }
-
-  return clampDeltas(deltas);
-};
-
-export const applyNarrativeToAudience = (state, evaluation) => {
-  const deltas = calculateGroupDeltas(state, evaluation);
-  const groups = cloneGroups(state.audience.groups);
-  const boredomBase =
-    5 -
-    (evaluation.dominantGenre === 'comedy' ? 3 : 0) -
-    (evaluation.reusedTags.length ? 1 : 0) +
-    (evaluation.timedOut ? 6 : 0) +
-    (evaluation.repeatedCombo ? 5 : 0);
-
-  GROUP_IDS.forEach((id) => {
-    const group = groups[id];
-    const delta = deltas[id];
-    const patienceDelta = delta >= 0 ? 1 : -4 + (evaluation.timedOut ? -2 : 0);
-    group.satisfaction = clamp(group.satisfaction + delta);
-    group.boredom = clamp(group.boredom + boredomBase);
-    group.patience = clamp(group.patience + patienceDelta);
-    if (group.satisfaction < 25) group.patience = clamp(group.patience - 3);
-    if (group.boredom > 70) group.satisfaction = clamp(group.satisfaction - 2);
+const updatePeople = (people, updater) =>
+  people.map((person) => {
+    if (person.state === 'gone') return person;
+    const patch = updater(person) || {};
+    return {
+      ...person,
+      ...patch,
+      satisfaction:
+        patch.satisfaction === undefined
+          ? person.satisfaction
+          : clamp(patch.satisfaction),
+      patience:
+        patch.patience === undefined ? person.patience : clamp(patch.patience),
+      boredom: patch.boredom === undefined ? person.boredom : clamp(patch.boredom),
+    };
   });
 
-  const total = sum(Object.values(groups).map((group) => group.count));
-  const avgDelta = weightedAverage(
-    GROUP_IDS.map((id) => ({
-      value: deltas[id],
-      weight: total > 0 ? groups[id].count : groups[id].share,
-    })),
-  );
-  const incoherence = Math.max(0, -evaluation.coherenceDelta);
-  const discontent = clamp(
-    state.audience.discontent +
-      (avgDelta < 0 ? -avgDelta * 0.9 : -avgDelta * 0.35) +
-      incoherence * 0.65 +
-      (evaluation.timedOut ? 7 : 0) +
-      (evaluation.repeatedCombo ? 5 : 0),
-  );
+export { getAudienceStats };
+
+export const applyNarrativeToAudience = (state, evaluation) => {
+  const quality = qualityFromEvaluation(evaluation);
+  const result = applyQualityToPeople(state.audience.people, quality);
+  const leavingBefore = state.audience.people.filter(
+    (person) => person.state === 'leaving',
+  ).length;
+  const leavingAfter = result.people.filter(
+    (person) => person.state === 'leaving',
+  ).length;
+  const extraDiscontent =
+    (quality < 45 ? (45 - quality) * 0.7 : -2) +
+    (evaluation.timedOut ? 7 : 0) +
+    (evaluation.repeatedCombo ? 6 : 0);
 
   return {
     audience: {
       ...state.audience,
-      groups,
-      discontent,
+      people: result.people,
+      walkouts: state.audience.walkouts + Math.max(0, leavingAfter - leavingBefore),
+      discontent: clamp(state.audience.discontent + extraDiscontent),
     },
-    deltas,
-    avgDelta,
+    deltas: { quality },
+    quality,
+    avgDelta: result.avgDelta,
   };
 };
 
@@ -184,14 +58,18 @@ export const determineReaction = (state, evaluation, avgDelta) => {
   const stats = getAudienceStats(state.audience);
   const coherence = state.narrative.coherence;
   const index = state.stats.decisions + state.audience.reactionHistory.length;
-  const causeBase = `Satisfacción media ${Math.round(stats.averageSatisfaction)} · Coherencia ${Math.round(
-    coherence,
-  )} · Descontento ${Math.round(state.audience.discontent)}.`;
+  const causeBase = `Satisfacción media ${Math.round(
+    stats.averageSatisfaction,
+  )} · Coherencia ${Math.round(coherence)} · Descontento ${Math.round(
+    stats.discontent,
+  )}.`;
 
   if (stats.discontent >= 70 || stats.averageSatisfaction < 24) {
     return {
       type: 'protest',
-      cause: `El descontento (${Math.round(state.audience.discontent)}) rompe el límite. El público se pone en pie y exige explicaciones.`,
+      cause: `El descontento (${Math.round(
+        stats.discontent,
+      )}) rompe el límite. El público se pone en pie y exige explicaciones.`,
     };
   }
 
@@ -206,20 +84,18 @@ export const determineReaction = (state, evaluation, avgDelta) => {
   if (stats.averageSatisfaction < 34 || avgDelta <= -11) {
     return {
       type: 'tomatoes',
-      cause: `La satisfacción cae a ${Math.round(stats.averageSatisfaction)}. Un tomate cruza el escenario antes de que nadie pueda improvisar.`,
+      cause: `La satisfacción cae a ${Math.round(
+        stats.averageSatisfaction,
+      )}. Un tomate cruza el escenario antes de que nadie pueda improvisar.`,
     };
   }
 
   if (stats.averageSatisfaction < 42 || avgDelta < -6) {
-    if (
-      stats.averageBoredom > 58 ||
-      stats.lowestGroup.patience < 62 ||
-      (stats.lowestGroup.satisfaction < 32 && stats.averageSatisfaction < 38)
-    ) {
+    if (stats.redShare > 0.34 || stats.averageBoredom > 58 || stats.averagePatience < 62) {
       return {
         type: 'walkout',
-        cause: `El grupo «${stats.lowestGroup.name}» ha agotado su paciencia (${Math.round(
-          stats.lowestGroup.patience,
+        cause: `El público más crítico ha agotado su paciencia (${Math.round(
+          stats.lowestPerson?.patience || 0,
         )}) y empieza a levantarse.`,
       };
     }
@@ -243,7 +119,9 @@ export const determineReaction = (state, evaluation, avgDelta) => {
   if (stats.averageSatisfaction >= 80 && coherence >= 65) {
     return {
       type: 'ovation',
-      cause: `La coherencia (${Math.round(coherence)}) y la satisfacción (${Math.round(
+      cause: `La coherencia (${Math.round(
+        coherence,
+      )}) y la satisfacción (${Math.round(
         stats.averageSatisfaction,
       )}) se disparan. La sala entera se pone en pie.`,
     };
@@ -265,14 +143,17 @@ export const determineReaction = (state, evaluation, avgDelta) => {
   ) {
     return {
       type: 'laughs',
-      cause: `El giro cómico conecta con la sala. Los amantes del caos ríen y el aburrimiento cae en picado.`,
+      cause: `El giro cómico conecta con la sala. El público más caótico ríe y el aburrimiento cae en picado.`,
     };
   }
 
   if (stats.averageSatisfaction >= 64 && avgDelta >= 1) {
     return {
       type: 'applause',
-      cause: `La escena convence: ${formatSigned(avgDelta, ' puntos')} de satisfacción media. La sala aplaude sin levantarse.`,
+      cause: `La escena convence: ${formatSigned(
+        avgDelta,
+        ' puntos',
+      )} de satisfacción media. La sala aplaude sin levantarse.`,
     };
   }
 
@@ -301,18 +182,9 @@ const reactionEntry = (state, type, cause, simulated) => {
   };
 };
 
-const updateGroups = (groups, updater) => {
-  const next = cloneGroups(groups);
-  GROUP_IDS.forEach((id) => {
-    const patch = updater(next[id], id);
-    if (patch) Object.assign(next[id], patch);
-  });
-  return next;
-};
-
 export const applyReactionEffects = (state, type, cause, { simulated = false } = {}) => {
   const entry = reactionEntry(state, type, cause, simulated);
-  let groups = cloneGroups(state.audience.groups);
+  let people = state.audience.people;
   let audience = { ...state.audience };
   let actors = { ...state.actors };
   let chaos = state.chaos;
@@ -322,35 +194,35 @@ export const applyReactionEffects = (state, type, cause, { simulated = false } =
   let bisRequested = state.audience.bisRequested;
 
   if (type === 'applause') {
-    groups = updateGroups(state.audience.groups, (group) => ({
-      satisfaction: clamp(group.satisfaction + 1),
-      patience: clamp(group.patience + 2),
+    people = updatePeople(people, (person) => ({
+      satisfaction: person.satisfaction + 1,
+      patience: person.patience + 2,
     }));
     nextTimerBonus += 2;
   }
 
   if (type === 'laughs') {
-    groups = updateGroups(groups, (group, id) => ({
-      satisfaction: clamp(group.satisfaction + (id === 'chaos' ? 2 : 0)),
-      boredom: clamp(group.boredom - 6),
-      patience: clamp(group.patience + 1),
+    people = updatePeople(people, (person) => ({
+      satisfaction: person.satisfaction + (person.criticality < 0.45 ? 2 : 0),
+      boredom: person.boredom - 6,
+      patience: person.patience + 1,
     }));
   }
 
   if (type === 'flowers') {
-    groups = updateGroups(groups, (group, id) => ({
-      satisfaction: clamp(group.satisfaction + 2 + (id === 'romantics' ? 1 : 0)),
-      boredom: clamp(group.boredom - 3),
+    people = updatePeople(people, (person) => ({
+      satisfaction: person.satisfaction + (person.criticality < 0.5 ? 3 : 2),
+      boredom: person.boredom - 3,
     }));
     improv = clamp(improv + 1, 0, 5);
     nextTimerBonus += 1;
   }
 
   if (type === 'ovation') {
-    groups = updateGroups(groups, (group) => ({
-      satisfaction: clamp(group.satisfaction + 3),
-      boredom: clamp(group.boredom - 8),
-      patience: clamp(group.patience + 4),
+    people = updatePeople(people, (person) => ({
+      satisfaction: person.satisfaction + 3,
+      boredom: person.boredom - 8,
+      patience: person.patience + 4,
     }));
     improv = clamp(improv + 1, 0, 5);
     nextTimerBonus += 3;
@@ -359,25 +231,25 @@ export const applyReactionEffects = (state, type, cause, { simulated = false } =
   }
 
   if (type === 'murmurs') {
-    groups = updateGroups(groups, (group, id) => ({
-      patience: clamp(group.patience - 3),
-      boredom: clamp(group.boredom + 2),
-      satisfaction: clamp(group.satisfaction + (id === 'critics' ? -1 : 0)),
+    people = updatePeople(people, (person) => ({
+      patience: person.patience - 3,
+      boredom: person.boredom + 2,
+      satisfaction: person.satisfaction + (person.criticality > 0.7 ? -1 : 0),
     }));
   }
 
   if (type === 'yawns') {
-    groups = updateGroups(groups, (group, id) => ({
-      satisfaction: clamp(group.satisfaction - (id === 'chaos' ? 0 : 1)),
-      boredom: clamp(group.boredom + 9),
-      patience: clamp(group.patience - 3),
+    people = updatePeople(people, (person) => ({
+      satisfaction: person.satisfaction - 1,
+      boredom: person.boredom + 9,
+      patience: person.patience - 3,
     }));
   }
 
   if (type === 'boo') {
-    groups = updateGroups(groups, (group) => ({
-      satisfaction: clamp(group.satisfaction - 2),
-      patience: clamp(group.patience - 5),
+    people = updatePeople(people, (person) => ({
+      satisfaction: person.satisfaction - 2,
+      patience: person.patience - 5,
     }));
     actors.trust = clamp(actors.trust - 3);
     audience.discontent = clamp(audience.discontent + 6);
@@ -385,9 +257,9 @@ export const applyReactionEffects = (state, type, cause, { simulated = false } =
   }
 
   if (type === 'tomatoes') {
-    groups = updateGroups(groups, (group, id) => ({
-      satisfaction: clamp(group.satisfaction - 3 - (id === 'romantics' ? 1 : 0)),
-      patience: clamp(group.patience - 6),
+    people = updatePeople(people, (person) => ({
+      satisfaction: person.satisfaction - 3 - (person.criticality > 0.7 ? 1 : 0),
+      patience: person.patience - 6,
     }));
     actors.trust = clamp(actors.trust - 4);
     audience.discontent = clamp(audience.discontent + 8);
@@ -395,35 +267,31 @@ export const applyReactionEffects = (state, type, cause, { simulated = false } =
   }
 
   if (type === 'walkout') {
-    groups = removeSpectators(groups, 3);
-    groups = updateGroups(groups, (group) => ({
-      patience: clamp(group.patience + 3),
-      satisfaction: clamp(group.satisfaction - 1),
+    const result = markLowestLeaving(people, 3);
+    people = updatePeople(result.people, (person) => ({
+      patience: person.patience + 3,
+      satisfaction: person.satisfaction - 1,
     }));
     audience.discontent = clamp(audience.discontent + 7);
-    audience.walkouts += 3;
+    audience.walkouts += result.removed;
     actors.trust = clamp(actors.trust - 2);
   }
 
   if (type === 'protest') {
-    groups = removeSpectators(groups, 2);
-    groups = updateGroups(groups, (group) => ({
-      satisfaction: clamp(group.satisfaction - 3),
-      patience: clamp(group.patience - 8),
+    const result = markLowestLeaving(people, 2);
+    people = updatePeople(result.people, (person) => ({
+      satisfaction: person.satisfaction - 3,
+      patience: person.patience - 8,
     }));
     audience.discontent = clamp(audience.discontent + 10);
-    audience.walkouts += 2;
+    audience.walkouts += result.removed;
     actors.trust = clamp(actors.trust - 4);
   }
-
-  groups = updateGroups(groups, (group) => ({
-    reactions: [...group.reactions, type].slice(-6),
-  }));
 
   const positive = entry.tone === 'positive';
   audience = {
     ...audience,
-    groups,
+    people,
     ovation,
     bisRequested,
     lastReaction: entry,
@@ -463,7 +331,7 @@ export const determineCrisis = (state, reaction) => {
     type = 'plot';
   } else if (state.chaos > 74) {
     type = 'chaos';
-  } else if (state.audience.groups.critics.satisfaction < 30) {
+  } else if (stats.redShare > 0.35 || (stats.lowestPerson?.satisfaction || 100) < 30) {
     type = 'heckler';
   } else if (reactionType === 'boo' && state.stats.decisions >= 2) {
     type = 'heckler';
@@ -489,7 +357,9 @@ export const getActionAvailability = (state, actionId) => {
     if ((state.cooldowns?.dialogue || 0) > 0) {
       return {
         enabled: false,
-        reason: `Recuperándose: disponible en ${state.cooldowns.dialogue} escena${state.cooldowns.dialogue === 1 ? '' : 's'}.`,
+        reason: `Recuperándose: disponible en ${state.cooldowns.dialogue} escena${
+          state.cooldowns.dialogue === 1 ? '' : 's'
+        }.`,
       };
     }
     return { enabled: true, reason: '' };
@@ -498,7 +368,9 @@ export const getActionAvailability = (state, actionId) => {
   if (cooldown > 0) {
     return {
       enabled: false,
-      reason: `Recuperándose: disponible en ${cooldown} escena${cooldown === 1 ? '' : 's'}.`,
+      reason: `Recuperándose: disponible en ${cooldown} escena${
+        cooldown === 1 ? '' : 's'
+      }.`,
     };
   }
   return { enabled: true, reason: '' };
@@ -509,7 +381,7 @@ export const applyCrisisAction = (state, actionId, { inCrisis = false } = {}) =>
   if (!availability.enabled) return state;
 
   const action = CRISIS_ACTIONS.find((item) => item.id === actionId);
-  const groups = cloneGroups(state.audience.groups);
+  let people = state.audience.people;
   let audience = { ...state.audience };
   let actors = { ...state.actors };
   let coherence = state.narrative.coherence;
@@ -523,22 +395,21 @@ export const applyCrisisAction = (state, actionId, { inCrisis = false } = {}) =>
     cooldowns.dialogue = 1;
     actors.trust = clamp(actors.trust + 9);
     coherence = clamp(coherence + 5);
-    groups.romantics.satisfaction = clamp(groups.romantics.satisfaction + 5);
-    groups.critics.satisfaction = clamp(groups.critics.satisfaction + 6);
-    groups.chaos.satisfaction = clamp(groups.chaos.satisfaction - 1);
+    people = updatePeople(people, (person) => ({
+      satisfaction: person.satisfaction + 4 + (person.criticality > 0.7 ? 2 : 0),
+      patience: person.patience + 3,
+    }));
     audience.discontent = clamp(audience.discontent - 10);
     chaos = clamp(chaos - 2);
     outcome =
-      'Bruno justifica el accidente con una frase que casi tiene sentido. Los críticos toman nota; los románticos perdonan.';
+      'Bruno justifica el accidente con una frase que casi tiene sentido. Los espectadores más exigentes toman nota; los tolerantes perdonan.';
   }
 
   if (actionId === 'pacing') {
-    GROUP_IDS.forEach((id) => {
-      groups[id].boredom = clamp(groups[id].boredom - 12);
-    });
-    groups.chaos.satisfaction = clamp(groups.chaos.satisfaction + 4);
-    groups.romantics.satisfaction = clamp(groups.romantics.satisfaction + 2);
-    groups.critics.satisfaction = clamp(groups.critics.satisfaction - 2);
+    people = updatePeople(people, (person) => ({
+      boredom: person.boredom - 12,
+      satisfaction: person.satisfaction + (person.criticality < 0.45 ? 3 : 1),
+    }));
     audience.discontent = clamp(audience.discontent - 3);
     chaos = clamp(chaos + 5);
     coherence = clamp(coherence - 2);
@@ -548,28 +419,26 @@ export const applyCrisisAction = (state, actionId, { inCrisis = false } = {}) =>
   }
 
   if (actionId === 'engage') {
-    const stats = getAudienceStats({ ...state.audience, groups });
-    const target = stats.lowestGroup.id;
-    GROUP_IDS.forEach((id) => {
-      groups[id].satisfaction = clamp(groups[id].satisfaction + 1);
-      groups[id].patience = clamp(groups[id].patience + 2);
-    });
-    groups[target].satisfaction = clamp(groups[target].satisfaction + 9);
-    groups.critics.satisfaction = clamp(groups.critics.satisfaction + 1);
+    const stats = getAudienceStats({ ...state.audience, people });
+    const target = stats.lowestPerson?.id;
+    people = updatePeople(people, (person) => ({
+      satisfaction: person.satisfaction + 1 + (person.id === target ? 9 : 0),
+      patience: person.patience + 2,
+    }));
     audience.discontent = clamp(audience.discontent - 8);
     actors.trust = clamp(actors.trust - 1);
     chaos = clamp(chaos + 1);
     cooldowns.engage = 1;
-    outcome = `Lía señala a una persona del grupo «${stats.lowestGroup.name}» y le dedica la siguiente réplica. La sala vuelve a sentirse parte del espectáculo.`;
+    outcome =
+      'Lía señala a la persona más insatisfecha y le dedica la siguiente réplica. La sala vuelve a sentirse parte del espectáculo.';
   }
 
   if (actionId === 'curtain') {
-    GROUP_IDS.forEach((id) => {
-      groups[id].satisfaction = clamp(groups[id].satisfaction - 4);
-      groups[id].boredom = clamp(groups[id].boredom + 10);
-      groups[id].patience = clamp(groups[id].patience + 2);
-    });
-    groups.critics.satisfaction = clamp(groups.critics.satisfaction - 6);
+    people = updatePeople(people, (person) => ({
+      satisfaction: person.satisfaction - 4 - (person.criticality > 0.7 ? 2 : 0),
+      boredom: person.boredom + 10,
+      patience: person.patience + 2,
+    }));
     audience.discontent = clamp(audience.discontent - 2);
     coherence = clamp(coherence - 3);
     chaos = clamp(chaos - 3);
@@ -578,6 +447,7 @@ export const applyCrisisAction = (state, actionId, { inCrisis = false } = {}) =>
       'El telón cae durante cuarenta segundos eternos. Cuando vuelve a subir, la crisis se ha enfriado... y también el interés.';
   }
 
+  audience = { ...audience, people };
   const reaction = state.audience.lastReaction;
   const next = {
     ...state,
@@ -622,15 +492,15 @@ export const applyCrisisAction = (state, actionId, { inCrisis = false } = {}) =>
 };
 
 export const applyCrisisWait = (state) => {
-  const groups = updateGroups(state.audience.groups, (group) => ({
-    satisfaction: clamp(group.satisfaction - 2),
-    patience: clamp(group.patience - 2),
+  const people = updatePeople(state.audience.people, (person) => ({
+    satisfaction: person.satisfaction - 2,
+    patience: person.patience - 2,
   }));
   return {
     ...state,
     audience: {
       ...state.audience,
-      groups,
+      people,
       discontent: clamp(state.audience.discontent + 4),
     },
     actors: {
@@ -661,18 +531,18 @@ export const applyCrisisWait = (state) => {
 };
 
 export const applyCrisisTimeout = (state) => {
-  const groups = removeSpectators(state.audience.groups, 2);
-  const updatedGroups = updateGroups(groups, (group) => ({
-    satisfaction: clamp(group.satisfaction - 5),
-    patience: clamp(group.patience - 6),
+  const result = markLowestLeaving(state.audience.people, 2);
+  const people = updatePeople(result.people, (person) => ({
+    satisfaction: person.satisfaction - 5,
+    patience: person.patience - 6,
   }));
   return {
     ...state,
     audience: {
       ...state.audience,
-      groups: updatedGroups,
+      people,
       discontent: clamp(state.audience.discontent + 10),
-      walkouts: state.audience.walkouts + 2,
+      walkouts: state.audience.walkouts + result.removed,
     },
     actors: {
       ...state.actors,
@@ -700,6 +570,14 @@ export const applyCrisisTimeout = (state) => {
     ].slice(-20),
   };
 };
+
+export const personGone = (state, personId) => ({
+  ...state,
+  audience: {
+    ...state.audience,
+    people: markPersonGone(state.audience.people, personId),
+  },
+});
 
 export const tickCooldowns = (cooldowns) =>
   Object.fromEntries(

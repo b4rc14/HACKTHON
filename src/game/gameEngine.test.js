@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialState } from './initialState.js';
+import { getAudienceStats } from './audienceEngine.js';
 import {
   advanceAfterResolution,
   beginIncident,
@@ -61,7 +62,9 @@ describe('motor de juego', () => {
     expect(state.result.reaction.icon).toBeTruthy();
     expect(state.narrative.establishedTags).toContain('alien');
     expect(state.narrative.establishedTags).not.toContain('dinosaur');
-    expect(state.audience.groups.chaos.satisfaction).not.toBe(63);
+    const stats = getAudienceStats(state.audience);
+    expect(stats.total).toBe(60);
+    expect(stats.averageSatisfaction).toBeGreaterThan(0);
   });
 
   it('el tiempo agotado resuelve la escena y nunca deja el juego bloqueado', () => {

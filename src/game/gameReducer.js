@@ -1,5 +1,6 @@
 import { createInitialState } from './initialState.js';
 import { selectionIsComplete } from './narrativeEngine.js';
+import { personGone } from './audienceEngine.js';
 import {
   advanceAfterResolution,
   beginIncident,
@@ -126,6 +127,9 @@ export const gameReducer = (state, action) => {
 
     case 'SET_SOUND':
       return withSound(state, Boolean(action.enabled));
+
+    case 'PERSON_GONE':
+      return personGone(state, action.personId);
 
     default:
       return state;

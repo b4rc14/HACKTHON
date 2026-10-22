@@ -1,5 +1,4 @@
 import React from 'react';
-import AudienceView from './AudienceView.jsx';
 import { GENRES } from '../game/storyData.js';
 
 const LIGHT_COLORS = {
@@ -353,8 +352,6 @@ export default function StageView({
   genre,
   selections,
   result,
-  audience,
-  stats,
   actors,
   lastReaction,
   paused,
@@ -508,13 +505,6 @@ export default function StageView({
           <span />
         </div>
       </div>
-
-      <AudienceView
-        audience={audience}
-        stats={stats}
-        reaction={lastReaction}
-        phase={phase}
-      />
     </section>
   );
 }

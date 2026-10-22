@@ -1,29 +1,31 @@
 import React, { useMemo, useState } from 'react';
+import { getAudienceStats } from '../game/audienceModel.js';
 
 export default function DemoPanel({ state, onClose, onPause, onSkip, onSimulate, onRestart, onToggleSound }) {
   const [copied, setCopied] = useState(false);
-  const snapshot = useMemo(
-    () => ({
+  const snapshot = useMemo(() => {
+    const stats = getAudienceStats(state.audience);
+    return {
       phase: state.phase,
       act: state.incidentIndex + 1,
       timer: state.timer,
       paused: state.demo.paused,
       selections: state.selections,
       audience: {
-        total: Object.values(state.audience.groups).reduce((total, group) => total + group.count, 0),
+        total: stats.total,
+        satisfied: stats.contentCount,
+        serious: stats.seriousCount,
+        critical: stats.criticalCount,
+        leaving: stats.leavingCount,
+        walkouts: stats.walkouts,
         discontent: Math.round(state.audience.discontent),
         lastReaction: state.audience.lastReaction?.type || null,
-        groups: Object.fromEntries(
-          Object.entries(state.audience.groups).map(([id, group]) => [
-            id,
-            {
-              count: group.count,
-              satisfaction: Math.round(group.satisfaction),
-              boredom: Math.round(group.boredom),
-              patience: Math.round(group.patience),
-            },
-          ]),
-        ),
+        people: state.audience.people.map((person) => ({
+          id: person.id,
+          state: person.state,
+          satisfaction: Math.round(person.satisfaction),
+          criticality: person.criticality,
+        })),
       },
       narrative: {
         dominantGenre: state.narrative.dominantGenre,
@@ -44,9 +46,8 @@ export default function DemoPanel({ state, onClose, onPause, onSkip, onSimulate,
       pendingCrisis: state.pendingCrisis?.title || null,
       ending: state.ending?.meta?.label || null,
       stats: state.stats,
-    }),
-    [state],
-  );
+    };
+  }, [state]);
 
   const copyState = async () => {
     try {
