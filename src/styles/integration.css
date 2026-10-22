@@ -87,6 +87,27 @@
   color: var(--gold-bright);
 }
 
+/* Limpieza: fuera textos de ayuda, subtítulos y pies que no son necesarios. */
+.desk-stack .desk-foot,
+.desk-stack .desk-head__meta,
+.desk-stack .desk-fader__meta,
+.desk-stack .desk-sub,
+.desk-stack .combo-grace__hint,
+.desk-stack .combo-slots__label,
+.desk-stack .desk-empty,
+.desk-stack .desk-key b,
+.audience-theater .legend-note,
+.audience-theater .abandon,
+.audience-theater .audience-stat__kicker,
+.audience-theater .audience-stat__counts,
+.audience-theater .audience-stat__reaction small,
+.crisis-inline-note,
+.crisis-action small,
+.crisis-hint,
+.demo-panel__note {
+  display: none !important;
+}
+
 @media (max-width: 1100px) {
   .desk-stack .control-desk {
     min-height: 0;
