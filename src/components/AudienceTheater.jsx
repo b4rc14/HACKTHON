@@ -168,7 +168,14 @@ function Seat({ person, onGone }) {
   );
 }
 
-export default function AudienceTheater({ people, stats, onGone, phase }) {
+export default function AudienceTheater({
+  people,
+  stats,
+  onGone,
+  phase,
+  coherence = 0,
+  lastReaction = null,
+}) {
   const wrapRef = useRef(null);
   const [scale, setScale] = useState(1);
 
@@ -185,6 +192,8 @@ export default function AudienceTheater({ people, stats, onGone, phase }) {
   const leaving = people.filter((person) => person.state === 'leaving');
   const present = stats.total;
   const walkouts = Math.max(0, stats.initialTotal - present);
+  const quality = Math.round(stats.averageSatisfaction * 0.65 + coherence * 0.35);
+  const totalForBars = Math.max(1, present);
 
   return (
     <section
@@ -193,6 +202,45 @@ export default function AudienceTheater({ people, stats, onGone, phase }) {
       style={{ height: `${HEIGHT * scale}px` }}
       aria-label="Platea"
     >
+      <aside className="audience-stat audience-stat--left" aria-label="Calidad de la función">
+        <span className="audience-stat__kicker">FUNCIÓN</span>
+        <div className="audience-stat__metric">
+          <span>CALIDAD</span>
+          <b>{quality}</b>
+          <i><em style={{ width: `${quality}%` }} /></i>
+        </div>
+        <div className="audience-stat__metric">
+          <span>COHERENCIA</span>
+          <b>{Math.round(coherence)}</b>
+          <i><em style={{ width: `${coherence}%` }} /></i>
+        </div>
+      </aside>
+
+      <aside className="audience-stat audience-stat--right" aria-label="Estado del público">
+        <span className="audience-stat__kicker">PLATEA</span>
+        <div className="audience-stat__public">
+          <span>EN SALA</span>
+          <b>{present}<small>/{stats.initialTotal}</small></b>
+        </div>
+        <div className="audience-stat__mood" aria-hidden="true">
+          <i style={{ width: `${(stats.contentCount / totalForBars) * 100}%`, background: '#7bd6a0' }} />
+          <i style={{ width: `${(stats.seriousCount / totalForBars) * 100}%`, background: '#e8bf5a' }} />
+          <i style={{ width: `${(stats.criticalCount / totalForBars) * 100}%`, background: '#e35d5d' }} />
+        </div>
+        <div className="audience-stat__counts">
+          <span>VERDE <b>{stats.contentCount}</b></span>
+          <span>ÁMBAR <b>{stats.seriousCount}</b></span>
+          <span>ROJO <b>{stats.criticalCount}</b></span>
+        </div>
+        <div className="audience-stat__reaction">
+          <span aria-hidden="true">{lastReaction?.icon || '👁'}</span>
+          <div>
+            <b>{lastReaction?.label || 'La platea observa'}</b>
+            <small>{stats.walkouts} abandonos</small>
+          </div>
+        </div>
+      </aside>
+
       <div
         className="audience-canvas"
         style={{ transform: `scale(${scale})` }}

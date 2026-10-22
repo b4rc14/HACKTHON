@@ -197,7 +197,8 @@ Además, **Dejar pasar la crisis** siempre está disponible para evitar cualquie
 - Teclas de sonido y objeto; volumen master y volumen de efectos.
 - Al completar luz + sonido + objeto, el combo se ejecuta automáticamente tras
   **2 segundos**. Cambiar una elección durante ese margen reinicia la cuenta.
-- La consola incluye el acceso a los protocolos de crisis y el monitor de sala.
+- La consola incluye el acceso a los protocolos de crisis. La calidad, la
+  coherencia y el estado del público se muestran a los lados de la platea.
 
 ---
 
@@ -210,9 +211,8 @@ src/
   components/
     TitleScreen.jsx           Portada
     StageView.jsx             Escenario 2.5D, actores, atrezo y eventos técnicos
-    AudienceTheater.jsx       Platea de 60 personas, colores y salida animada
+    AudienceTheater.jsx       Platea de 60 personas, colores, datos laterales y salida animada
     ControlPanel.jsx          Consola inferior: mezcla de luces, sonido y objetos
-    ShowStatusBar.jsx         Monitor de calidad, coherencia y público
     CrisisPanel.jsx           Protocolos inline y modal de crisis
     StageEventOverlay.jsx     Minijuegos técnicos (foco, cable, gallina)
     SceneInterlude.jsx        Transición narrativa entre escena y resultado
@@ -241,7 +241,7 @@ src/
     stage-events.css          Overlays y minijuegos de averías
     audience.css              Platea, butacas, salidas y animación de abandono
     controls.css              Consola inferior de cabina
-    integration.css           Monitor de sala y composición del desk
+    integration.css           Consola en flujo inferior y ajustes de integración
     layout.css                Composición vertical escenario / platea / mesa
 scripts/
   simulate.mjs                Simulador de balance

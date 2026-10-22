@@ -3,7 +3,6 @@ import TitleScreen from './components/TitleScreen.jsx';
 import StageView from './components/StageView.jsx';
 import AudienceTheater from './components/AudienceTheater.jsx';
 import ControlPanel from './components/ControlPanel.jsx';
-import ShowStatusBar from './components/ShowStatusBar.jsx';
 import CrisisPanel from './components/CrisisPanel.jsx';
 import IncidentOverlay from './components/IncidentOverlay.jsx';
 import EndingScreen from './components/EndingScreen.jsx';
@@ -395,11 +394,12 @@ export default function App() {
           people={state.audience.people}
           stats={stats}
           phase={state.phase}
+          coherence={state.narrative.coherence}
+          lastReaction={state.audience.lastReaction}
           onGone={handlePersonGone}
         />
 
         <section className="desk-stack">
-          <ShowStatusBar state={state} stats={stats} result={state.result} />
           <ControlPanel
             selections={state.selections}
             onSelect={(kind, id) => dispatch({ type: 'SELECT_CONTROL', kind, id })}
